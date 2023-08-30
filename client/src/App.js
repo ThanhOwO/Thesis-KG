@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import axios from 'axios'
-import { Input, Button, Typography, List } from 'antd'
+import { Input, Button, Typography, List, Spin } from 'antd'
 import './App.scss'
 
 const { Title, Text } = Typography
@@ -12,25 +12,35 @@ function App () {
   const [inputText, setInputText] = useState('')
   const [triples, setTriples] = useState([])
   const [translatedText, setTranslatedText] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [inputError, setInputError] = useState(false)
 
   const handleExtractOpenIE = async () => {
+    if (inputText.trim() === '') {
+      setInputError(true)
+      setTimeout(() => {
+        setInputError(false)
+      }, 5000)
+      return
+    }
+    setInputError(false)
     try {
-      // Step 1: Translate the input text
+      setLoading(true)
       const translateResponse = await axios.post('http://localhost:8080/translate', {
         text: inputText
       })
-
-      // Step 2: Extract OpenIE triples from the translated text
       const extractResponse = await axios.post('http://localhost:9000', {
         annotators: 'openie',
         outputFormat: 'json',
-        data: translateResponse.data.translatedText // Use the translated text
+        data: translateResponse.data.translatedText
       })
 
       setTranslatedText(translateResponse.data.translatedText)
       setTriples(extractResponse.data.sentences[0]?.openie)
     } catch (error) {
       console.error('Error:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -42,12 +52,16 @@ function App () {
         onChange={(e) => setInputText(e.target.value)}
         placeholder={t('Enter text...')}
         autoSize={{ minRows: 4 }}
+        required
+        className={inputError ? 'input-error' : ''}
       />
+      {inputError && <p className="error-message">{t('Input is required')}</p>}
       <div className='Exbutton'>
         <Button type="primary" onClick={handleExtractOpenIE}>
           {t('Extract OpenIE Triples')}
         </Button>
       </div>
+      {loading && <Spin className="loading-indicator" style={{ marginLeft: '10px' }} />}
       <div className="result-container">
         <div className="translated-text">
           <Title level={4}>{t('Translated Text Title:')}</Title>

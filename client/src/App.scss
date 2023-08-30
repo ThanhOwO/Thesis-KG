@@ -28,6 +28,22 @@ body {
     align-items: center;
     margin-top: 10px;
   }
+
+  .loading-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+  }
+
+  .input-error {
+    border: 1px solid red;
+  }
+  
+  .error-message {
+    color: red;
+    margin-top: 5px;
+  }
 }
 
 .result-container {
