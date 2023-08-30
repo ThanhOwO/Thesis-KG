@@ -1,38 +1,38 @@
-import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import axios from 'axios';
-import { Input, Button, Typography, List } from 'antd';
-import './styles.scss';
+import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import axios from 'axios'
+import { Input, Button, Typography, List } from 'antd'
+import './App.scss'
 
-const { Title, Text } = Typography;
+const { Title, Text } = Typography
 
-function App() {
-  const { t } = useTranslation();
+function App () {
+  const { t } = useTranslation()
 
-  const [inputText, setInputText] = useState('');
-  const [triples, setTriples] = useState([]);
-  const [translatedText, setTranslatedText] = useState('');
+  const [inputText, setInputText] = useState('')
+  const [triples, setTriples] = useState([])
+  const [translatedText, setTranslatedText] = useState('')
 
   const handleExtractOpenIE = async () => {
     try {
       // Step 1: Translate the input text
       const translateResponse = await axios.post('http://localhost:8080/translate', {
-        text: inputText,
-      });
+        text: inputText
+      })
 
       // Step 2: Extract OpenIE triples from the translated text
       const extractResponse = await axios.post('http://localhost:9000', {
         annotators: 'openie',
         outputFormat: 'json',
-        data: translateResponse.data.translatedText, // Use the translated text
-      });
+        data: translateResponse.data.translatedText // Use the translated text
+      })
 
-      setTranslatedText(translateResponse.data.translatedText);
-      setTriples(extractResponse.data.sentences[0]?.openie);
+      setTranslatedText(translateResponse.data.translatedText)
+      setTriples(extractResponse.data.sentences[0]?.openie)
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error:', error)
     }
-  };
+  }
 
   return (
     <div className="app-container">
@@ -69,7 +69,7 @@ function App() {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
-export default App;
+export default App
