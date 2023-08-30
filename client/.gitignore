@@ -4,6 +4,7 @@
 /node_modules
 /.pnp
 .pnp.js
+../stanford-corenlp-4.5.3/
 
 # testing
 /coverage
