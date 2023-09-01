@@ -36,5 +36,6 @@ module.exports = {
     "no-unused-vars": "error",
     "no-undef": "error",
     "no-underscore-dangle": 0,
+    'quotes': 'off',
   },
 }

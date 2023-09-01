@@ -29,10 +29,14 @@ function App () {
       const translateResponse = await axios.post('http://localhost:8080/translate', {
         text: inputText
       })
+      let transformedText = translateResponse.data.translatedText
+      if (shouldApplyTransformation(translateResponse.data.translatedText)) {
+        transformedText = transformInput(translateResponse.data.translatedText)
+      }
       const extractResponse = await axios.post('http://localhost:9000', {
         annotators: 'openie',
         outputFormat: 'json',
-        data: translateResponse.data.translatedText
+        data: transformedText
       })
 
       setTranslatedText(translateResponse.data.translatedText)
@@ -42,6 +46,23 @@ function App () {
     } finally {
       setLoading(false)
     }
+  }
+
+  const shouldApplyTransformation = (text) => {
+    const words = text.split(" ")
+    const isIndex = words.indexOf('is')
+    return isIndex !== -1 && words.length - isIndex <= 3
+  }
+
+  function transformInput (originalInput) {
+    const parts = originalInput.split(' is ')
+    if (parts.length !== 2) {
+      return originalInput
+    }
+    const subject = parts[1].trim()
+    const remainder = parts[0].trim()
+    const transformedInput = `${subject} is ${remainder}`
+    return transformedInput
   }
 
   return (
