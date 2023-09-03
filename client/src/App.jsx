@@ -94,10 +94,10 @@ function App () {
             dataSource={triples}
             renderItem={(triple, index) => (
               <List.Item>
-                {t('Confidence:')} {triple.confidence} -&nbsp;
-                {t('Subject:')} {triple.subject} -&nbsp;
-                {t('Relation:')} {triple.relation} -&nbsp;
-                {t('Object:')} {triple.object}
+                <strong>{t('Confidence:')}</strong> {triple.confidence} {' '}
+                <span className="subject-color"> {t('Subject:')} </span> {triple.subject} -{' '}
+                <span className="relation-color"> {t('Relation:')}  </span> {triple.relation} -{' '}
+                <span className="object-color"> {t('Object:')} </span> {triple.object}
               </List.Item>
             )}
           />

@@ -8,7 +8,6 @@ app.use(express.json());
 
 app.post('/translate', async (req, res) => {
     const { text } = req.body;
-  
     try {
       const translation = await translate(text, { from: 'vi', to: 'en' });
       res.json({ translatedText: translation });

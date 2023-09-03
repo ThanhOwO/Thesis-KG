@@ -37,5 +37,7 @@ module.exports = {
     "no-undef": "error",
     "no-underscore-dangle": 0,
     'quotes': 'off',
+    'indent': 'off',
+    'semi': 'off',
   },
 }

@@ -5,11 +5,13 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon app",
+    "corenlp": "java -mx4g -cp \"./stanford-corenlp-4.5.3/*\" edu.stanford.nlp.pipeline.StanfordCoreNLPServer -annotators \"tokenize,ssplit,pos,lemma,depparse,coref,openie\" -port 9000 -timeout 15000",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google-cloud/translate": "^8.0.1",
     "axios": "^1.5.0",
     "cors": "^2.8.5",
     "express": "^4.18.2",
