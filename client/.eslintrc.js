@@ -39,5 +39,7 @@ module.exports = {
     'quotes': 'off',
     'indent': 'off',
     'semi': 'off',
+    'no-trailing-spaces': 'off',
+    'eol-last': 'off',
   },
 }
