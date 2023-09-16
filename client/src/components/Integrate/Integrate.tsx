@@ -68,7 +68,7 @@ function Integrate() {
   const getFinalResult = () => {
 
     const finalResult = [];
-    const processedTriples = new Set();
+    const uniqueRelations = new Set();
     openieTriples.forEach((triple) => {
       nerEntities.forEach((entity) => {
         const tripleSubjectLower = triple.subject.toLowerCase();
@@ -84,9 +84,12 @@ function Integrate() {
             entity.text.toLowerCase() === tripleObjectLower && entity.label === 'LOCATION'
         );
     
-        if (foodMatch && locationMatch && !processedTriples.has(triple.subject + triple.object)) {
-          finalResult.push(triple);
-          processedTriples.add(triple.subject + triple.object);
+        if (foodMatch && locationMatch) {
+          const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
+          if (!uniqueRelations.has(relationKey)) {
+            uniqueRelations.add(relationKey);
+            finalResult.push(triple);
+          }
         }
       });
     });
@@ -94,7 +97,26 @@ function Integrate() {
     return finalResult;
   };
 
+  const fetchDataFromNeo4j = async (subject, object) => {
+    try {
+      const response = await axios.get(`http://localhost:8080/neo4j?subject=${subject}&object=${object}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching data from Neo4j:', error);
+      throw error;
+    }
+  };
+
   const finalResult = getFinalResult();
+
+  finalResult.forEach(async (triple) => {
+    try {
+      const data = await fetchDataFromNeo4j(triple.subject, triple.object);
+      console.log('Data from Neo4j:', data);
+    } catch (error) {
+      console.error('Error processing Neo4j data:', error);
+    }
+  });
 
   return (
     <div className="app-container">
@@ -124,9 +146,9 @@ function Integrate() {
             renderItem={(triple, index) => (
               <List.Item>
                 <strong>Confidence:</strong> {triple.confidence}{' '}
-                <span className="subject-color">Subject:</span> {triple.subject} -{' '}
-                <span className="relation-color">Relation:</span> {triple.relation} -{' '}
-                <span className="object-color">Object:</span> {triple.object}
+                <span className="subject-color"><strong>Subject:</strong></span> {triple.subject} -{' '}
+                <span className="relation-color"><strong>Relation:</strong></span> {triple.relation} -{' '}
+                <span className="object-color"><strong>Object:</strong></span> {triple.object}
               </List.Item>
             )}
           />
@@ -140,8 +162,8 @@ function Integrate() {
             dataSource={nerEntities}
             renderItem={(entity, index) => (
               <List.Item>
-                <span className="entity-text-title">Text:</span> {entity.text}{' '}
-                <span className="entity-label-title">Label:</span> {entity.label}
+                <span className="entity-text-title"><strong>Text:</strong></span> {entity.text}{' '}
+                <span className="entity-label-title"><strong>Label:</strong></span> {entity.label}
               </List.Item>
             )}
           />
@@ -153,9 +175,9 @@ function Integrate() {
             renderItem={(triple, index) => (
               <List.Item>
                 <strong>Confidence:</strong> {triple.confidence}{' '}
-                <span className="subject-color">Subject:</span> {triple.subject} -{' '}
-                <span className="relation-color">Relation:</span> {triple.relation} -{' '}
-                <span className="object-color">Object:</span> {triple.object}
+                <span className="subject-color"><strong>Subject:</strong></span> {triple.subject} -{' '}
+                <span className="relation-color"><strong>Relation:</strong></span> {triple.relation} -{' '}
+                <span className="object-color"><strong>Object:</strong></span> {triple.object}
               </List.Item>
             )}
           />
