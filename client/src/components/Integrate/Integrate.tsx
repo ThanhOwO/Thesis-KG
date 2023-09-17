@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import './styles.scss';
 import { Input, Button, Typography, List, Spin } from 'antd';
+import useNeo4j from '../hooks/useNeo4j';
+import Neo4jTable from '../utils/datatable';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 function Integrate() {
   const [inputText, setInputText] = useState('');
@@ -11,6 +13,8 @@ function Integrate() {
   const [nerEntities, setNEREntities] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [inputError, setInputError] = useState(false);
+  const { fetchDataFromNeo4j } = useNeo4j();
+  const [neo4jData, setNeo4jData] = useState([]);
 
   const handleExtractAndAnalyze = async () => {
     if (inputText.trim() === '') {
@@ -97,26 +101,44 @@ function Integrate() {
     return finalResult;
   };
 
-  const fetchDataFromNeo4j = async (subject, object) => {
+  const finalResult = getFinalResult();
+
+  const fetchDataFromNeo4jForTriple = async (triple) => {
     try {
-      const response = await axios.get(`http://localhost:8080/neo4j?subject=${subject}&object=${object}`);
-      return response.data;
+      const data = await fetchDataFromNeo4j(triple.subject, triple.object);
+      return data;
     } catch (error) {
-      console.error('Error fetching data from Neo4j:', error);
+      console.error('Error processing Neo4j data:', error);
       throw error;
     }
   };
 
-  const finalResult = getFinalResult();
-
-  finalResult.forEach(async (triple) => {
+  const fetchNeo4jDataForFinalResult = async () => {
+    const dataPromises = finalResult.map(async (triple) => {
+      try {
+        const data = await fetchDataFromNeo4jForTriple(triple);
+        return data;
+      } catch (error) {
+        console.error('Error fetching Neo4j data for triple:', triple, error);
+        return null;
+      }
+    });
+  
     try {
-      const data = await fetchDataFromNeo4j(triple.subject, triple.object);
-      console.log('Data from Neo4j:', data);
+      const neo4jDataResults = await Promise.all(dataPromises);
+      setNeo4jData(neo4jDataResults[0]);
+      console.log('Updated neo4jData:', neo4jDataResults);
     } catch (error) {
-      console.error('Error processing Neo4j data:', error);
+      console.error('Error fetching Neo4j data for final result:', error);
     }
-  });
+  };  
+
+  useEffect(() => {
+    if (openieTriples.length > 0 && nerEntities.length > 0) {
+      fetchNeo4jDataForFinalResult();
+    }
+  }, [openieTriples, nerEntities]);
+  
 
   return (
     <div className="app-container">
@@ -178,6 +200,33 @@ function Integrate() {
                 <span className="subject-color"><strong>Subject:</strong></span> {triple.subject} -{' '}
                 <span className="relation-color"><strong>Relation:</strong></span> {triple.relation} -{' '}
                 <span className="object-color"><strong>Object:</strong></span> {triple.object}
+              </List.Item>
+            )}
+          />
+        </div>
+        <div className='neo4j-container'>
+          <Title level={4}>Neo4j Result:</Title>
+          <List
+            dataSource={neo4jData}
+            renderItem={(data, index) => (
+              <List.Item key={index}>
+                <div>
+                  {data ? (
+                    <div>
+                      <p><strong>Subject:</strong></p>
+                      <p><strong>Type:</strong> {JSON.stringify(data.subject.type)}</p>
+                      <p><strong>Name:</strong> {JSON.stringify(data.subject.name)}</p>
+                      <p><strong>Image:</strong> {JSON.stringify(data.subject.image)}</p>
+                      <p><strong>Sources:</strong> {JSON.stringify(data.subject.sources)}</p>
+                      <p><strong>Object:</strong></p>
+                      <p><strong>Type:</strong> {JSON.stringify(data.object.type)}</p>
+                      <p><strong>Name:</strong> {JSON.stringify(data.object.name)}</p>
+                      <p><strong>Country:</strong> {JSON.stringify(data.object.country)}</p>
+                    </div>
+                  ) : (
+                    <p>No Neo4j data available for this triple.</p>
+                  )}
+                </div>
               </List.Item>
             )}
           />

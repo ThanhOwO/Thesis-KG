@@ -11,6 +11,7 @@ const driver = neo4j.driver(
   
 const router = express.Router();
 
+//Translate Vietnamese text to English
 router.post('/translate', async (req, res) => {
     const { text } = req.body;
 
@@ -29,6 +30,7 @@ router.post('/translate', async (req, res) => {
     }
 });
 
+//Call NER model
 router.post('/ner', (req, res) => {
     const text = req.body.text;
     executeNER(text)
@@ -110,7 +112,7 @@ router.get('/neo4j', async (req, res) => {
         type: 'Food',
         name: record.get('foodName'),
         image: record.get('foodImage'),
-        source: record.get('foodSource')
+        sources: record.get('foodSource')
       },
       relation: defaultRelation,
       object: {
