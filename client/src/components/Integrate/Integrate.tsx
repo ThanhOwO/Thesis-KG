@@ -134,10 +134,10 @@ function Integrate() {
   };  
 
   useEffect(() => {
-    if (openieTriples.length > 0 && nerEntities.length > 0) {
+    if (openieTriples.length > 0 || nerEntities.length > 0) {
       fetchNeo4jDataForFinalResult();
     }
-  }, [openieTriples, nerEntities]);
+  }, [openieTriples, nerEntities]);  
   
 
   return (
@@ -157,12 +157,12 @@ function Integrate() {
           Extract and Analyze
         </Button>
       </div>
-      {loading ? (
-        <Spin className="loading-indicator" style={{ marginLeft: '10px' }} />
-      ) : null}
       <div className="result-container">
         <div className="openie-results">
           <Title level={4}>OpenIE Triples:</Title>
+          {loading ? (
+          <Spin className="loading-indicator" style={{ margin: '10px' }} />
+          ) : null}
           <List
             dataSource={openieTriples}
             renderItem={(triple, index) => (
@@ -178,7 +178,7 @@ function Integrate() {
         <div className="ner-results">
           <Title level={4}>NER Results:</Title>
           {loading ? (
-            <Spin className="loading-indicator" style={{ marginLeft: '10px' }} />
+            <Spin className="loading-indicator" style={{ margin: '10px' }} />
           ) : null}
           <List
             dataSource={nerEntities}
@@ -192,6 +192,9 @@ function Integrate() {
         </div>
         <div className="final-result">
           <Title level={4}>Final Result:</Title>
+          {loading ? (
+            <Spin className="loading-indicator" style={{ margin: '10px' }} />
+          ) : null}
           <List
             dataSource={finalResult}
             renderItem={(triple, index) => (
@@ -206,30 +209,31 @@ function Integrate() {
         </div>
         <div className='neo4j-container'>
           <Title level={4}>Neo4j Result:</Title>
-          <List
-            dataSource={neo4jData}
-            renderItem={(data, index) => (
-              <List.Item key={index}>
-                <div>
-                  {data ? (
-                    <div>
-                      <p><strong>Subject:</strong></p>
-                      <p><strong>Type:</strong> {JSON.stringify(data.subject.type)}</p>
-                      <p><strong>Name:</strong> {JSON.stringify(data.subject.name)}</p>
-                      <p><strong>Image:</strong> {JSON.stringify(data.subject.image)}</p>
-                      <p><strong>Sources:</strong> {JSON.stringify(data.subject.sources)}</p>
-                      <p><strong>Object:</strong></p>
-                      <p><strong>Type:</strong> {JSON.stringify(data.object.type)}</p>
-                      <p><strong>Name:</strong> {JSON.stringify(data.object.name)}</p>
-                      <p><strong>Country:</strong> {JSON.stringify(data.object.country)}</p>
-                    </div>
-                  ) : (
-                    <p>No Neo4j data available for this triple.</p>
-                  )}
-                </div>
-              </List.Item>
-            )}
-          />
+          {loading ? (
+            <Spin className="loading-indicator" style={{ margin: '10px' }} />
+          ) : null}
+          {Array.isArray(neo4jData) && neo4jData.length > 0 ? (
+            <List
+              dataSource={neo4jData}
+              renderItem={(data, index) => (
+                <List.Item key={index}>
+                  <div>
+                    <p><strong>Subject:</strong></p>
+                    <p><strong>Type:</strong> {data.subject ? JSON.stringify(data.subject.type) : 'N/A'}</p>
+                    <p><strong>Name:</strong> {data.subject ? JSON.stringify(data.subject.name) : 'N/A'}</p>
+                    <p><strong>Image:</strong> {data.subject ? JSON.stringify(data.subject.image) : 'N/A'}</p>
+                    <p><strong>Sources:</strong> {data.subject ? JSON.stringify(data.subject.sources) : 'N/A'}</p>
+                    <p><strong>Object:</strong></p>
+                    <p><strong>Type:</strong> {data.object ? JSON.stringify(data.object.type) : 'N/A'}</p>
+                    <p><strong>Name:</strong> {data.object ? JSON.stringify(data.object.name) : 'N/A'}</p>
+                    <p><strong>Country:</strong> {data.object ? JSON.stringify(data.object.country) : 'N/A'}</p>
+                  </div>
+                </List.Item>
+              )}
+            />
+          ) : (
+            <p>No Neo4j data available for this triple.</p>
+          )}
         </div>
       </div>
     </div>
