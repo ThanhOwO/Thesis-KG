@@ -104,8 +104,10 @@ function Integrate() {
   const finalResult = getFinalResult();
 
   const fetchDataFromNeo4jForTriple = async (triple) => {
+    const subjectLower = triple.subject.toLowerCase();
+    const objectLower = triple.object.toLowerCase();
     try {
-      const data = await fetchDataFromNeo4j(triple.subject, triple.object);
+      const data = await fetchDataFromNeo4j(subjectLower, objectLower);
       return data;
     } catch (error) {
       console.error('Error processing Neo4j data:', error);
@@ -199,10 +201,10 @@ function Integrate() {
             dataSource={finalResult}
             renderItem={(triple, index) => (
               <List.Item>
-                <strong>Confidence:</strong> {triple.confidence}{' '}
-                <span className="subject-color"><strong>Subject:</strong></span> {triple.subject} -{' '}
-                <span className="relation-color"><strong>Relation:</strong></span> {triple.relation} -{' '}
-                <span className="object-color"><strong>Object:</strong></span> {triple.object}
+                <strong>Confidence:</strong> {triple?.confidence}{' '}
+                <span className="subject-color"><strong>Subject:</strong></span> {triple?.subject} -{' '}
+                <span className="relation-color"><strong>Relation:</strong></span> {triple?.relation} -{' '}
+                <span className="object-color"><strong>Object:</strong></span> {triple?.object}
               </List.Item>
             )}
           />
@@ -219,14 +221,14 @@ function Integrate() {
                 <List.Item key={index}>
                   <div>
                     <p><strong>Subject:</strong></p>
-                    <p><strong>Type:</strong> {data.subject ? JSON.stringify(data.subject.type) : 'N/A'}</p>
-                    <p><strong>Name:</strong> {data.subject ? JSON.stringify(data.subject.name) : 'N/A'}</p>
-                    <p><strong>Image:</strong> {data.subject ? JSON.stringify(data.subject.image) : 'N/A'}</p>
-                    <p><strong>Sources:</strong> {data.subject ? JSON.stringify(data.subject.sources) : 'N/A'}</p>
+                    <p><strong>Type:</strong> {data?.subject ? JSON.stringify(data?.subject.type) : 'N/A'}</p>
+                    <p><strong>Name:</strong> {data?.subject ? JSON.stringify(data?.subject.name) : 'N/A'}</p>
+                    <p><strong>Image:</strong> {data?.subject ? JSON.stringify(data?.subject.image) : 'N/A'}</p>
+                    <p><strong>Sources:</strong> {data?.subject ? JSON.stringify(data?.subject.sources) : 'N/A'}</p>
                     <p><strong>Object:</strong></p>
-                    <p><strong>Type:</strong> {data.object ? JSON.stringify(data.object.type) : 'N/A'}</p>
-                    <p><strong>Name:</strong> {data.object ? JSON.stringify(data.object.name) : 'N/A'}</p>
-                    <p><strong>Country:</strong> {data.object ? JSON.stringify(data.object.country) : 'N/A'}</p>
+                    <p><strong>Type:</strong> {data?.object ? JSON.stringify(data?.object.type) : 'N/A'}</p>
+                    <p><strong>Name:</strong> {data?.object ? JSON.stringify(data?.object.name) : 'N/A'}</p>
+                    <p><strong>Country:</strong> {data?.object ? JSON.stringify(data?.object.country) : 'N/A'}</p>
                   </div>
                 </List.Item>
               )}

@@ -90,20 +90,53 @@ router.get('/neo4j', async (req, res) => {
   const session = driver.session();
 
   try {
-    const result = await session.run(`
-      MATCH (food:Food {foodName: $subject})
-      MATCH (location:Location {locationName: $object})
-      RETURN
-        food.foodName AS foodName,
-        food.image AS foodImage,
-        food.sources AS foodSource,
-        location.locationName AS locationName,
-        location.country AS locationCountry
-      LIMIT 10
-    `, { subject, object });
+    let cypherQuery;
+
+    if (subject && object) {
+      cypherQuery = `
+        MATCH (food:Food)
+        WHERE food.vieName = $subject OR food.engName = $subject
+        MATCH (location:Location {lowerLocationName: $object})
+        RETURN
+          food.foodName AS foodName,
+          food.image AS foodImage,
+          food.sources AS foodSource,
+          location.locationName AS locationName,
+          location.country AS locationCountry
+        LIMIT 10
+      `;
+    } else if (subject) {
+      cypherQuery = `
+        MATCH (food:Food)
+        WHERE food.vieName = $subject OR food.engName = $subject
+        MATCH (food)--(location:Location)
+        RETURN
+          food.foodName AS foodName,
+          food.image AS foodImage,
+          food.sources AS foodSource,
+          location.locationName AS locationName,
+          location.country AS locationCountry
+        LIMIT 10
+      `;
+    } else if (object) {
+      cypherQuery = `
+        MATCH (food:Food)--(location:Location {lowerLocationName: $object})
+        RETURN
+          food.foodName AS foodName,
+          food.image AS foodImage,
+          food.sources AS foodSource,
+          location.locationName AS locationName,
+          location.country AS locationCountry
+        LIMIT 10
+      `;
+    } else {
+      return res.status(400).json({ error: 'Invalid input. Please provide subject and/or object.' });
+    }
+
+    const result = await session.run(cypherQuery, { subject, object });
 
     if (result.records.length === 0) {
-      return res.status(404).json({ error: 'Cannot find that value in database' });
+      return res.status(404).json({ error: 'Cannot find matching data in the database' });
     }
 
     const defaultRelation = 'SPECIALTY_IN';
@@ -121,7 +154,7 @@ router.get('/neo4j', async (req, res) => {
         country: record.get('locationCountry')
       }
     }));
-    
+
     res.json(data);
   } catch (error) {
     console.error('Error fetching Neo4j data:', error);
