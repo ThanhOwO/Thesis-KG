@@ -71,24 +71,23 @@ function Integrate() {
 
   const getFinalResult = () => {
 
+    const isQueryWhatWhereWhich =
+    inputText.toLowerCase().includes('what') ||
+    inputText.toLowerCase().includes('where') ||
+    inputText.toLowerCase().includes('which');
+
     const finalResult = [];
     const uniqueRelations = new Set();
-    openieTriples.forEach((triple) => {
-      nerEntities.forEach((entity) => {
-        const tripleSubjectLower = triple.subject.toLowerCase();
-        const tripleObjectLower = triple.object.toLowerCase();
 
-        const foodMatch = nerEntities.some(
-          (entity) =>
-            entity.text.toLowerCase() === tripleSubjectLower && entity.label === 'FOOD'
-        );
-    
-        const locationMatch = nerEntities.some(
-          (entity) =>
-            entity.text.toLowerCase() === tripleObjectLower && entity.label === 'LOCATION'
-        );
-    
-        if (foodMatch && locationMatch) {
+    if(isQueryWhatWhereWhich) {
+      nerEntities.forEach((entity) => {
+        if (entity.label === 'FOOD' || entity.label === 'LOCATION') {
+          const triple = {
+            subject: entity.label === 'FOOD' ? entity.text : '',
+            relation: 'is',
+            object: entity.label === 'LOCATION' ? entity.text : '',
+          };
+  
           const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
           if (!uniqueRelations.has(relationKey)) {
             uniqueRelations.add(relationKey);
@@ -96,16 +95,39 @@ function Integrate() {
           }
         }
       });
-    });
+    } else {
+      openieTriples.forEach((triple) => {
+        nerEntities.forEach((entity) => {
+          const tripleSubjectLower = triple.subject.toLowerCase();
+          const tripleObjectLower = triple.object.toLowerCase();
   
+          const foodMatch = nerEntities.some(
+            (entity) =>
+              entity.text.toLowerCase() === tripleSubjectLower && entity.label === 'FOOD'
+          );
+      
+          const locationMatch = nerEntities.some(
+            (entity) =>
+              entity.text.toLowerCase() === tripleObjectLower && entity.label === 'LOCATION'
+          );
+          if (foodMatch && locationMatch) {
+            const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
+            if (!uniqueRelations.has(relationKey)) {
+              uniqueRelations.add(relationKey);
+              finalResult.push(triple);
+            }
+          }
+        });
+      });
+    }
     return finalResult;
   };
 
   const finalResult = getFinalResult();
-
+  
   const fetchDataFromNeo4jForTriple = async (triple) => {
-    const subjectLower = triple.subject.toLowerCase();
-    const objectLower = triple.object.toLowerCase();
+    const subjectLower = triple.subject ? triple.subject.toLowerCase() : '';
+    const objectLower = triple.object ? triple.object.toLowerCase() : '';
     try {
       const data = await fetchDataFromNeo4j(subjectLower, objectLower);
       return data;
