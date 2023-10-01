@@ -24,7 +24,8 @@
       "DATETIME",
       "FOOD",
       "LOCATION",
-      "REGION"
+      "REGION",
+      "RELATIONSHIP"
     ]
   },
   "pipeline":[
@@ -62,9 +63,14 @@
         "p":1.0,
         "r":1.0,
         "f":1.0
+      },
+      "RELATIONSHIP":{
+        "p":1.0,
+        "r":1.0,
+        "f":1.0
       }
     },
-    "tok2vec_loss":1188.8559174879,
-    "ner_loss":152.9436860464
+    "tok2vec_loss":2021.819473756,
+    "ner_loss":193.4171067241
   }
 }
