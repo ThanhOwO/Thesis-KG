@@ -25,6 +25,7 @@
       "FOOD",
       "LOCATION",
       "REGION",
+      "REGION ",
       "RELATIONSHIP"
     ]
   },
@@ -40,14 +41,14 @@
 
   ],
   "performance":{
-    "ents_f":1.0,
+    "ents_f":0.9996976111,
     "ents_p":1.0,
-    "ents_r":1.0,
+    "ents_r":0.9993954051,
     "ents_per_type":{
       "FOOD":{
         "p":1.0,
-        "r":1.0,
-        "f":1.0
+        "r":0.9991166078,
+        "f":0.9995581087
       },
       "LOCATION":{
         "p":1.0,
@@ -64,13 +65,18 @@
         "r":1.0,
         "f":1.0
       },
+      "REGION ":{
+        "p":1.0,
+        "r":1.0,
+        "f":1.0
+      },
       "RELATIONSHIP":{
         "p":1.0,
         "r":1.0,
         "f":1.0
       }
     },
-    "tok2vec_loss":2021.819473756,
-    "ner_loss":193.4171067241
+    "tok2vec_loss":995.7171301863,
+    "ner_loss":110.5170383816
   }
 }
