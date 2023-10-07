@@ -3,14 +3,13 @@ import axios from 'axios';
 import './styles.scss';
 import { Input, Button, Typography, List, Spin } from 'antd';
 import useNeo4j from '../hooks/useNeo4j';
-import Neo4jTable from '../utils/datatable';
 
 const { Title } = Typography;
 
 function Integrate() {
   const [inputText, setInputText] = useState('');
-  const [openieTriples, setOpenIETriples] = useState<any[]>([]);
-  const [nerEntities, setNEREntities] = useState<any[]>([]);
+  const [openieTriples, setOpenIETriples] = useState([]);
+  const [nerEntities, setNEREntities] = useState([]);
   const [loading, setLoading] = useState(false);
   const [inputError, setInputError] = useState(false);
   const { fetchDataFromNeo4j } = useNeo4j();
@@ -79,22 +78,49 @@ function Integrate() {
     const finalResult = [];
     const uniqueRelations = new Set();
 
-    if(isQueryWhatWhereWhich) {
-      nerEntities.forEach((entity) => {
-        if (entity.label === 'FOOD' || entity.label === 'LOCATION') {
-          const triple = {
-            subject: entity.label === 'FOOD' ? entity.text : '',
-            relation: 'is',
-            object: entity.label === 'LOCATION' ? entity.text : '',
-          };
+    if (isQueryWhatWhereWhich) {
+      const relationEntities = nerEntities.filter((entity) => entity.label === 'RELATIONSHIP');
+      const foodEntity = nerEntities.find((entity) => entity.label === 'FOOD');
+      const locationEntity = nerEntities.find((entity) => entity.label === 'LOCATION');
   
+      if (relationEntities.length > 0) {
+        relationEntities.forEach((relationEntity) => {
+          if ((foodEntity && relationEntity) || (locationEntity && relationEntity)) {
+            const subject = foodEntity ? foodEntity.text : ''
+            const object = locationEntity ? locationEntity.text : ''
+            const triple = {
+              subject,
+              relation: relationEntity.text,
+              object,
+            };
+    
+            const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
+            if (!uniqueRelations.has(relationKey)) {
+              uniqueRelations.add(relationKey);
+              finalResult.push(triple);
+            }
+          } else {
+            console.log("Can't detect any relation");
+          }
+        });
+      } else if (foodEntity || locationEntity) {
+          const subject = foodEntity ? foodEntity.text : '';
+          const object = locationEntity ? locationEntity.text : '';
+
+          const triple = {
+            subject,
+            relation: 'food in',
+            object,
+          };
+
           const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
           if (!uniqueRelations.has(relationKey)) {
             uniqueRelations.add(relationKey);
             finalResult.push(triple);
           }
+        } else {
+          console.log("Can't detect any relation");
         }
-      });
     } else {
       openieTriples.forEach((triple) => {
         nerEntities.forEach((entity) => {
@@ -110,7 +136,12 @@ function Integrate() {
             (entity) =>
               entity.text.toLowerCase() === tripleObjectLower && entity.label === 'LOCATION'
           );
-          if (foodMatch && locationMatch) {
+
+          const relationMatch = entity.label === 'RELATIONSHIP' &&
+          (triple.relation.toLowerCase().includes('food in') ||
+            triple.relation.toLowerCase().includes('specialty in'));
+            
+          if (foodMatch && locationMatch && relationMatch) {
             const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
             if (!uniqueRelations.has(relationKey)) {
               uniqueRelations.add(relationKey);
@@ -128,8 +159,14 @@ function Integrate() {
   const fetchDataFromNeo4jForTriple = async (triple) => {
     const subjectLower = triple.subject ? triple.subject.toLowerCase() : '';
     const objectLower = triple.object ? triple.object.toLowerCase() : '';
+    let relation = '';
+    if (triple.relation.toLowerCase().includes('food in')) {
+      relation = 'food_in';
+    } else if (triple.relation.toLowerCase().includes('specialty in')) {
+      relation = 'specialty_in';
+    }
     try {
-      const data = await fetchDataFromNeo4j(subjectLower, objectLower);
+      const data = await fetchDataFromNeo4j(subjectLower, objectLower, relation);
       return data;
     } catch (error) {
       console.error('Error processing Neo4j data:', error);
@@ -166,7 +203,7 @@ function Integrate() {
 
   return (
     <div className="app-container">
-      <Title level={2}>Combined OpenIE and NER Analysis</Title>
+      <Title level={2}>Integrating Models</Title>
       <Input.TextArea
         value={inputText}
         onChange={(e) => setInputText(e.target.value)}
@@ -247,6 +284,7 @@ function Integrate() {
                     <p><strong>Name:</strong> {data?.subject ? JSON.stringify(data?.subject.name) : 'N/A'}</p>
                     <p><strong>Image:</strong> {data?.subject ? JSON.stringify(data?.subject.image) : 'N/A'}</p>
                     <p><strong>Sources:</strong> {data?.subject ? JSON.stringify(data?.subject.sources) : 'N/A'}</p>
+                    <p><strong>Relation:</strong> {data?.relation ? JSON.stringify(data?.relation) : 'N/A'}</p>
                     <p><strong>Object:</strong></p>
                     <p><strong>Type:</strong> {data?.object ? JSON.stringify(data?.object.type) : 'N/A'}</p>
                     <p><strong>Name:</strong> {data?.object ? JSON.stringify(data?.object.name) : 'N/A'}</p>

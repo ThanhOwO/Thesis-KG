@@ -2,13 +2,25 @@ const express = require('express');
 const translate = require('translate-google');
 const neo4j = require('neo4j-driver');
 const { containsVietnameseDiacritics, executeNER } = require('../functions/functions');
+require('dotenv').config();
 
 
 const driver = neo4j.driver(
-    'bolt://localhost:7687',
-    neo4j.auth.basic('neo4j', '12345678')
-  );
-  
+    process.env.REACT_NEO4J,
+    neo4j.auth.basic(process.env.NEO4J_USERNAME, process.env.NEO4J_PASSWORD)
+);
+const session = driver.session();
+session
+    .run('RETURN 1')
+    .then(() => {
+        console.log('Successfully connected to Neo4j!');
+    })
+    .catch((error) => {
+        console.error(error);
+    })
+    .finally(() => {
+        session.close();
+    });
 const router = express.Router();
 
 //Translate Vietnamese text to English
@@ -86,51 +98,101 @@ router.get('/all-neo4j', async (req, res) => {
 
 //Get data from Neo4j by subject and object
 router.get('/neo4j', async (req, res) => {
-  const { subject, object } = req.query;
+  const { subject, object, relation } = req.query;
   const session = driver.session();
 
   try {
     let cypherQuery;
+    let defaultRelation;
 
     if (subject && object) {
-      cypherQuery = `
-        MATCH (food:Food)
-        WHERE food.vieName = $subject OR food.engName = $subject
-        MATCH (location:Location {lowerLocationName: $object})
-        RETURN
-          food.foodName AS foodName,
-          food.image AS foodImage,
-          food.sources AS foodSource,
-          location.locationName AS locationName,
-          location.country AS locationCountry
-        LIMIT 10
-      `;
+      if (relation && (relation.toLowerCase() === 'food_in' || relation.toLowerCase() === 'specialty_in')) {
+        cypherQuery = `
+          MATCH (food:Food)-[:${relation.toUpperCase()}]->(location:Location)
+          WHERE (food.vieName = $subject OR food.engName = $subject)
+          AND (location.lowerLocationName = $object)
+          RETURN
+            food.foodName AS foodName,
+            food.image AS foodImage,
+            food.sources AS foodSource,
+            location.locationName AS locationName,
+            location.country AS locationCountry
+          LIMIT 10
+        `;
+        defaultRelation = relation.toUpperCase();
+      } else {
+        // return res.status(400).json({ error: 'Invalid relation. Please provide valid relation.' });
+        cypherQuery = `
+         MATCH (food:Food)
+         WHERE food.vieName = $subject OR food.engName = $subject
+         MATCH (location:Location {lowerLocationName: $object})
+         RETURN
+           food.foodName AS foodName,
+           food.image AS foodImage,
+           food.sources AS foodSource,
+           location.locationName AS locationName,
+           location.country AS locationCountry
+         LIMIT 10
+       `;
+      }
     } else if (subject) {
-      cypherQuery = `
-        MATCH (food:Food)
-        WHERE food.vieName = $subject OR food.engName = $subject
-        MATCH (food)--(location:Location)
-        RETURN
-          food.foodName AS foodName,
-          food.image AS foodImage,
-          food.sources AS foodSource,
-          location.locationName AS locationName,
-          location.country AS locationCountry
-        LIMIT 10
-      `;
+      if (relation && (relation.toLowerCase() === 'food_in' || relation.toLowerCase() === 'specialty_in')) {
+        cypherQuery = `
+          MATCH (food:Food)-[:${relation.toUpperCase()}]->(location:Location)
+          WHERE (food.vieName = $subject OR food.engName = $subject)
+          RETURN
+            food.foodName AS foodName,
+            food.image AS foodImage,
+            food.sources AS foodSource,
+            location.locationName AS locationName,
+            location.country AS locationCountry
+          LIMIT 10
+        `;
+        defaultRelation = relation.toUpperCase();
+      } else {
+        // return res.status(400).json({ error: 'Invalid relation. Please provide valid relation.' });
+        cypherQuery = `
+         MATCH (food:Food)
+         WHERE food.vieName = $subject OR food.engName = $subject
+         MATCH (food)--(location:Location)
+         RETURN
+           food.foodName AS foodName,
+           food.image AS foodImage,
+           food.sources AS foodSource,
+           location.locationName AS locationName,
+           location.country AS locationCountry
+         LIMIT 10
+       `;
+      }
     } else if (object) {
-      cypherQuery = `
-        MATCH (food:Food)--(location:Location {lowerLocationName: $object})
-        RETURN
-          food.foodName AS foodName,
-          food.image AS foodImage,
-          food.sources AS foodSource,
-          location.locationName AS locationName,
-          location.country AS locationCountry
-        LIMIT 10
-      `;
+      if (relation && (relation.toLowerCase() === 'food_in' || relation.toLowerCase() === 'specialty_in')) {
+        cypherQuery = `
+          MATCH (food:Food)-[:${relation.toUpperCase()}]->(location:Location)
+          WHERE (location.lowerLocationName = $object)
+          RETURN
+            food.foodName AS foodName,
+            food.image AS foodImage,
+            food.sources AS foodSource,
+            location.locationName AS locationName,
+            location.country AS locationCountry
+          LIMIT 10
+        `;
+        defaultRelation = relation.toUpperCase();
+      } else {
+        // return res.status(400).json({ error: 'Invalid relation. Please provide valid relation.' });
+        cypherQuery = `
+         MATCH (food:Food)--(location:Location {lowerLocationName: $object})
+         RETURN
+           food.foodName AS foodName,
+           food.image AS foodImage,
+           food.sources AS foodSource,
+           location.locationName AS locationName,
+           location.country AS locationCountry
+         LIMIT 10
+       `;
+      }
     } else {
-      return res.status(400).json({ error: 'Invalid input. Please provide subject and/or object.' });
+      return res.status(400).json({ error: 'Invalid input. Please provide valid subject, object, and/or relation.' });
     }
 
     const result = await session.run(cypherQuery, { subject, object });
@@ -139,7 +201,6 @@ router.get('/neo4j', async (req, res) => {
       return res.status(404).json({ error: 'Cannot find matching data in the database' });
     }
 
-    const defaultRelation = 'SPECIALTY_IN';
     const data = result.records.map(record => ({
       subject: {
         type: 'Food',

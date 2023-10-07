@@ -1,3 +1,3 @@
 /** @format */
 
-export { default as Integrate } from './Integrate.tsx'
+export { default as Integrate } from './Integrate.jsx'
