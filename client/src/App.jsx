@@ -1,5 +1,5 @@
 import React from 'react'
-import { Integrate } from './components/Integrate'
+import { Integrate } from './components'
 
 
 
