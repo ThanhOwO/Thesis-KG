@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import './styles.scss';
-import { Input, Button, Typography, List, Spin } from 'antd';
+import { Button, Typography } from 'antd';
 import useNeo4j from '../hooks/useNeo4j';
+import InputArea from '../UICus/InputArea';
+import Results from '../UICus/Results';
+import UserResults from '../UICus/UserResults';
 
 const { Title } = Typography;
 
@@ -77,6 +80,7 @@ function Integrate() {
 
     const finalResult = [];
     const uniqueRelations = new Set();
+    let isConditionMet = false;
 
     if (isQueryWhatWhereWhich) {
       const relationEntities = nerEntities.filter((entity) => entity.label === 'RELATIONSHIP');
@@ -142,6 +146,7 @@ function Integrate() {
             triple.relation.toLowerCase().includes('specialty in'));
             
           if (foodMatch && locationMatch && relationMatch) {
+            isConditionMet = true;
             const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
             if (!uniqueRelations.has(relationKey)) {
               uniqueRelations.add(relationKey);
@@ -151,10 +156,10 @@ function Integrate() {
         });
       });
     }
-    return finalResult;
+    return { finalResult, isConditionMet };
   };
 
-  const finalResult = getFinalResult();
+  const { finalResult, isConditionMet } = getFinalResult();
   
   const fetchDataFromNeo4jForTriple = async (triple) => {
     const subjectLower = triple.subject ? triple.subject.toLowerCase() : '';
@@ -204,100 +209,25 @@ function Integrate() {
   return (
     <div className="app-container">
       <Title level={2}>Integrating Models</Title>
-      <Input.TextArea
-        value={inputText}
-        onChange={(e) => setInputText(e.target.value)}
-        placeholder="Enter text..."
-        autoSize={{ minRows: 4 }}
-        required
-        className={inputError ? 'input-error' : ''}
+      <InputArea
+        inputText={inputText}
+        setInputText={setInputText}
+        inputError={inputError}
+        onInputChange={(e) => setInputText(e.target.value)}
       />
-      {inputError && <p className="error-message">Input is required</p>}
       <div className="Exbutton">
         <Button type="primary" onClick={handleExtractAndAnalyze}>
           Extract and Analyze
         </Button>
       </div>
-      <div className="result-container">
-        <div className="openie-results">
-          <Title level={4}>OpenIE Triples:</Title>
-          {loading ? (
-          <Spin className="loading-indicator" style={{ margin: '10px' }} />
-          ) : null}
-          <List
-            dataSource={openieTriples}
-            renderItem={(triple, index) => (
-              <List.Item>
-                <strong>Confidence:</strong> {triple.confidence}{' '}
-                <span className="subject-color"><strong>Subject:</strong></span> {triple.subject} -{' '}
-                <span className="relation-color"><strong>Relation:</strong></span> {triple.relation} -{' '}
-                <span className="object-color"><strong>Object:</strong></span> {triple.object}
-              </List.Item>
-            )}
-          />
-        </div>
-        <div className="ner-results">
-          <Title level={4}>NER Results:</Title>
-          {loading ? (
-            <Spin className="loading-indicator" style={{ margin: '10px' }} />
-          ) : null}
-          <List
-            dataSource={nerEntities}
-            renderItem={(entity, index) => (
-              <List.Item>
-                <span className="entity-text-title"><strong>Text:</strong></span> {entity.text}{' '}
-                <span className="entity-label-title"><strong>Label:</strong></span> {entity.label}
-              </List.Item>
-            )}
-          />
-        </div>
-        <div className="final-result">
-          <Title level={4}>Final Result:</Title>
-          {loading ? (
-            <Spin className="loading-indicator" style={{ margin: '10px' }} />
-          ) : null}
-          <List
-            dataSource={finalResult}
-            renderItem={(triple, index) => (
-              <List.Item>
-                <strong>Confidence:</strong> {triple?.confidence}{' '}
-                <span className="subject-color"><strong>Subject:</strong></span> {triple?.subject} -{' '}
-                <span className="relation-color"><strong>Relation:</strong></span> {triple?.relation} -{' '}
-                <span className="object-color"><strong>Object:</strong></span> {triple?.object}
-              </List.Item>
-            )}
-          />
-        </div>
-        <div className='neo4j-container'>
-          <Title level={4}>Neo4j Result:</Title>
-          {loading ? (
-            <Spin className="loading-indicator" style={{ margin: '10px' }} />
-          ) : null}
-          {Array.isArray(neo4jData) && neo4jData.length > 0 ? (
-            <List
-              dataSource={neo4jData}
-              renderItem={(data, index) => (
-                <List.Item key={index}>
-                  <div>
-                    <p><strong>Subject:</strong></p>
-                    <p><strong>Type:</strong> {data?.subject ? JSON.stringify(data?.subject.type) : 'N/A'}</p>
-                    <p><strong>Name:</strong> {data?.subject ? JSON.stringify(data?.subject.name) : 'N/A'}</p>
-                    <p><strong>Image:</strong> {data?.subject ? JSON.stringify(data?.subject.image) : 'N/A'}</p>
-                    <p><strong>Sources:</strong> {data?.subject ? JSON.stringify(data?.subject.sources) : 'N/A'}</p>
-                    <p><strong>Relation:</strong> {data?.relation ? JSON.stringify(data?.relation) : 'N/A'}</p>
-                    <p><strong>Object:</strong></p>
-                    <p><strong>Type:</strong> {data?.object ? JSON.stringify(data?.object.type) : 'N/A'}</p>
-                    <p><strong>Name:</strong> {data?.object ? JSON.stringify(data?.object.name) : 'N/A'}</p>
-                    <p><strong>Country:</strong> {data?.object ? JSON.stringify(data?.object.country) : 'N/A'}</p>
-                  </div>
-                </List.Item>
-              )}
-            />
-          ) : (
-            <p>No Neo4j data available for this triple.</p>
-          )}
-        </div>
-      </div>
+      <Results
+        openieTriples={openieTriples}
+        nerEntities={nerEntities}
+        finalResult={finalResult}
+        neo4jData={neo4jData}
+        loading={loading}
+      />
+      <UserResults neo4jData={neo4jData} isConditionMet={isConditionMet} loading={loading}/>
     </div>
   );
 }
