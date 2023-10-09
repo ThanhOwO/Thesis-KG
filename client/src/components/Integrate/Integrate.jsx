@@ -71,6 +71,24 @@ function Integrate() {
     return transformedInput;
   }
 
+  const fetchDataFromNeo4jForTriple = async (triple) => {
+    const subjectLower = triple.subject ? triple.subject.toLowerCase() : '';
+    const objectLower = triple.object ? triple.object.toLowerCase() : '';
+    let relation = '';
+    if (triple.relation.toLowerCase().includes('food in')) {
+      relation = 'food_in';
+    } else if (triple.relation.toLowerCase().includes('specialty in')) {
+      relation = 'specialty_in';
+    }
+    try {
+      const data = await fetchDataFromNeo4j(subjectLower, objectLower, relation);
+      return data;
+    } catch (error) {
+      console.error('Error processing Neo4j data:', error);
+      throw error;
+    }
+  };
+
   const getFinalResult = () => {
 
     const isQueryWhatWhereWhich =
@@ -80,9 +98,10 @@ function Integrate() {
 
     const finalResult = [];
     const uniqueRelations = new Set();
-    let isConditionMet = false;
+    let isConditionMet = 0;
 
     if (isQueryWhatWhereWhich) {
+      isConditionMet = 1;
       const relationEntities = nerEntities.filter((entity) => entity.label === 'RELATIONSHIP');
       const foodEntity = nerEntities.find((entity) => entity.label === 'FOOD');
       const locationEntity = nerEntities.find((entity) => entity.label === 'LOCATION');
@@ -126,8 +145,8 @@ function Integrate() {
           console.log("Can't detect any relation");
         }
     } else {
-      openieTriples.forEach((triple) => {
-        nerEntities.forEach((entity) => {
+      openieTriples.forEach(async (triple) => {
+        nerEntities.forEach(async (entity) => {
           const tripleSubjectLower = triple.subject.toLowerCase();
           const tripleObjectLower = triple.object.toLowerCase();
   
@@ -143,10 +162,23 @@ function Integrate() {
 
           const relationMatch = entity.label === 'RELATIONSHIP' &&
           (triple.relation.toLowerCase().includes('food in') ||
-            triple.relation.toLowerCase().includes('specialty in'));
+            triple.relation.toLowerCase().includes('specialty in'));   
             
           if (foodMatch && locationMatch && relationMatch) {
-            isConditionMet = true;
+            let data = await fetchDataFromNeo4jForTriple(triple)
+            if (isNeo4jDataEmpty(data)) {
+              triple.object = '';
+              isConditionMet = 3;
+            }
+          } else if (foodMatch && locationMatch) {
+            isConditionMet = 2;
+            const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
+            if (!uniqueRelations.has(relationKey)) {
+              uniqueRelations.add(relationKey);
+              finalResult.push(triple);
+            }
+          } else if (foodMatch && relationMatch) {
+            isConditionMet = 3;
             const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
             if (!uniqueRelations.has(relationKey)) {
               uniqueRelations.add(relationKey);
@@ -160,24 +192,6 @@ function Integrate() {
   };
 
   const { finalResult, isConditionMet } = getFinalResult();
-  
-  const fetchDataFromNeo4jForTriple = async (triple) => {
-    const subjectLower = triple.subject ? triple.subject.toLowerCase() : '';
-    const objectLower = triple.object ? triple.object.toLowerCase() : '';
-    let relation = '';
-    if (triple.relation.toLowerCase().includes('food in')) {
-      relation = 'food_in';
-    } else if (triple.relation.toLowerCase().includes('specialty in')) {
-      relation = 'specialty_in';
-    }
-    try {
-      const data = await fetchDataFromNeo4j(subjectLower, objectLower, relation);
-      return data;
-    } catch (error) {
-      console.error('Error processing Neo4j data:', error);
-      throw error;
-    }
-  };
 
   const fetchNeo4jDataForFinalResult = async () => {
     const dataPromises = finalResult.map(async (triple) => {
@@ -197,6 +211,10 @@ function Integrate() {
     } catch (error) {
       console.error('Error fetching Neo4j data for final result:', error);
     }
+  };  
+
+  const isNeo4jDataEmpty = (data) => {
+    return !data || data.length === 0;
   };  
 
   useEffect(() => {

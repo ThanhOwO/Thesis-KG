@@ -16,7 +16,7 @@ const UserResults = ({ neo4jData, isConditionMet, loading }) => {
     const calculateResponseText = () => {
       let responseText = '';
 
-      if (isConditionMet && neo4jData && neo4jData.length > 0) {
+      if (isConditionMet === 2 && neo4jData && neo4jData.length > 0) {
         const { subject, object, relation } = neo4jData[0];
         const possibleResponses = relation === 'SPECIALTY_IN' ? [
           `Yes, this ${subject.name} is the heart and soul of ${object.name}'s culinary identity.`,
@@ -27,6 +27,19 @@ const UserResults = ({ neo4jData, isConditionMet, loading }) => {
           `Indeed, ${subject.name} is highly popular and widely enjoyed in ${object.name}. `,
           `Yes, ${subject.name} is highly popular and widely enjoyed in ${object.name}.`,
           `Yes, ${subject.name} is indeed highly popular and widely enjoyed in ${object.name}.`,
+        ];
+
+        const randomIndex = Math.floor(Math.random() * possibleResponses.length);
+        responseText = possibleResponses[randomIndex];
+      } else if (isConditionMet === 3 && neo4jData && neo4jData.length > 0) {
+        const { subject, relation } = neo4jData[0];
+        const possibleResponses = relation === 'SPECIALTY_IN' ? [
+          `Sadly, no, while ${subject.name} is enjoyed in place or region you said but it hasn't taken center stage in the region's culinary story.`,
+          `Unfortunately, ${subject.name}, although known locally, is not prominent in the culinary heritage of the place you mentioned.`,
+          `Unfortunately, this particular specialty ${subject.name}, while available in place you mentioned, doesn't quite shine as a star in the region's culinary narrative.`,
+          `No, ${subject.name} isn't considered a specialty in place or region that you mentioned.`,
+        ] : [
+          `If we talk about dishes like ${subject.name}, it is not only available where you are, it can be easily found in many other regions such as:`,
         ];
 
         const randomIndex = Math.floor(Math.random() * possibleResponses.length);
@@ -56,7 +69,7 @@ const UserResults = ({ neo4jData, isConditionMet, loading }) => {
         {image && (
           <img
             src={image}
-            alt="Food"
+            alt="${subject.name}"
             onClick={() => {
               setModalImage(image);
               setModalVisible(true);
@@ -67,14 +80,14 @@ const UserResults = ({ neo4jData, isConditionMet, loading }) => {
         {source && <p>Source: <a href={source} target="_blank" rel="noopener noreferrer">{source}</a></p>}
       </div>
       <Modal
-        visible={modalVisible}
+        open={modalVisible}
         onCancel={() => setModalVisible(false)}
         footer={null}
         centered
         destroyOnClose
         width={900}
       >
-        {modalImage && <img src={modalImage} alt="Food" style={{ width: '100%' }} />}
+        {modalImage && <img src={modalImage} alt="${subject.name}" style={{ width: '100%' }} />}
       </Modal>
     </div>
   );

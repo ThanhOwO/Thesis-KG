@@ -121,19 +121,19 @@ router.get('/neo4j', async (req, res) => {
         `;
         defaultRelation = relation.toUpperCase();
       } else {
-        // return res.status(400).json({ error: 'Invalid relation. Please provide valid relation.' });
-        cypherQuery = `
-         MATCH (food:Food)
-         WHERE food.vieName = $subject OR food.engName = $subject
-         MATCH (location:Location {lowerLocationName: $object})
-         RETURN
-           food.foodName AS foodName,
-           food.image AS foodImage,
-           food.sources AS foodSource,
-           location.locationName AS locationName,
-           location.country AS locationCountry
-         LIMIT 10
-       `;
+        return res.status(400).json({ error: 'Invalid relation. Please provide valid relation.' });
+      //   cypherQuery = `
+      //    MATCH (food:Food)
+      //    WHERE food.vieName = $subject OR food.engName = $subject
+      //    MATCH (location:Location {lowerLocationName: $object})
+      //    RETURN
+      //      food.foodName AS foodName,
+      //      food.image AS foodImage,
+      //      food.sources AS foodSource,
+      //      location.locationName AS locationName,
+      //      location.country AS locationCountry
+      //    LIMIT 10
+      //  `;
       }
     } else if (subject) {
       if (relation && (relation.toLowerCase() === 'food_in' || relation.toLowerCase() === 'specialty_in')) {
@@ -150,19 +150,7 @@ router.get('/neo4j', async (req, res) => {
         `;
         defaultRelation = relation.toUpperCase();
       } else {
-        // return res.status(400).json({ error: 'Invalid relation. Please provide valid relation.' });
-        cypherQuery = `
-         MATCH (food:Food)
-         WHERE food.vieName = $subject OR food.engName = $subject
-         MATCH (food)--(location:Location)
-         RETURN
-           food.foodName AS foodName,
-           food.image AS foodImage,
-           food.sources AS foodSource,
-           location.locationName AS locationName,
-           location.country AS locationCountry
-         LIMIT 10
-       `;
+        return res.status(400).json({ error: 'Invalid relation. Please provide valid relation.' });
       }
     } else if (object) {
       if (relation && (relation.toLowerCase() === 'food_in' || relation.toLowerCase() === 'specialty_in')) {
@@ -179,17 +167,7 @@ router.get('/neo4j', async (req, res) => {
         `;
         defaultRelation = relation.toUpperCase();
       } else {
-        // return res.status(400).json({ error: 'Invalid relation. Please provide valid relation.' });
-        cypherQuery = `
-         MATCH (food:Food)--(location:Location {lowerLocationName: $object})
-         RETURN
-           food.foodName AS foodName,
-           food.image AS foodImage,
-           food.sources AS foodSource,
-           location.locationName AS locationName,
-           location.country AS locationCountry
-         LIMIT 10
-       `;
+        return res.status(400).json({ error: 'Invalid relation. Please provide valid relation.' });
       }
     } else {
       return res.status(400).json({ error: 'Invalid input. Please provide valid subject, object, and/or relation.' });
