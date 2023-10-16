@@ -1,8 +1,9 @@
 const express = require('express');
 const translate = require('translate-google');
 const neo4j = require('neo4j-driver');
-const { containsVietnameseDiacritics, executeNER } = require('../functions/functions');
+const { containsVietnameseDiacritics, executeNER, executeFactCheck } = require('../functions/functions');
 require('dotenv').config();
+const { exec } = require('child_process');
 
 
 const driver = neo4j.driver(
@@ -200,6 +201,24 @@ router.get('/neo4j', async (req, res) => {
     res.status(500).json({ error: 'An error occurred' });
   } finally {
     await session.close();
+  }
+});
+
+//fact checking
+router.post('/fact', async (req, res) => {
+  try {
+    const { urls, keywords } = req.body;
+    if (!urls || !keywords) {
+      return res.status(400).json({ error: 'Both URLs and keywords are required.' });
+    }
+    executeFactCheck(urls, keywords, (error, extractedInformation) => {
+      if (error) {
+        return res.status(500).json({ error: `Error extracting information: ${error.message}` });
+      }
+      res.json(extractedInformation);
+    });
+  } catch (error) {
+    res.status(500).json({ error: `An internal server error occurred: ${error.message}` });
   }
 });
 

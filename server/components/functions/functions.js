@@ -1,4 +1,4 @@
-const { spawn } = require('child_process');
+const { spawn, exec } = require('child_process');
 const { vietnameseDiacritics } = require('../libs/libs');
 
 function containsVietnameseDiacritics(text) {
@@ -40,7 +40,34 @@ async function executeNER(inputText) {
     });
 }
 
+async function executeFactCheck(urls, keywords, callback) {
+  const pythonScriptPath = 'factChecking.py';
+
+  let urlsString = urls;
+  let keywordsString = keywords;
+
+  if (Array.isArray(urls)) {
+    urlsString = urls.join(',');
+  }
+
+  if (Array.isArray(keywords)) {
+    keywordsString = keywords.join(',');
+  }
+
+  const command = `python ${pythonScriptPath} ${urlsString} ${keywordsString}`;
+
+  exec(command, (error, stdout, stderr) => {
+    if (error) {
+      callback(error, null);
+    } else {
+      const extractedInformation = JSON.parse(stdout);
+      callback(null, extractedInformation);
+    }
+  });
+}
+
 module.exports = {
     containsVietnameseDiacritics,
-    executeNER
+    executeNER,
+    executeFactCheck
 };

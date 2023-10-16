@@ -223,7 +223,7 @@ function Integrate() {
     }
   }, [openieTriples, nerEntities]);  
   
-
+  
   return (
     <div className="app-container">
       <Title level={2}>Integrating Models</Title>

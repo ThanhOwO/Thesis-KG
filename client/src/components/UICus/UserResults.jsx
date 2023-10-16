@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Spin, Typography, Modal } from 'antd';
 import './styles.scss';
+import RelevantResult from './RelevantResult';
 
 const { Title } = Typography;
 
@@ -8,6 +9,7 @@ const UserResults = ({ neo4jData, isConditionMet, loading }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalImage, setModalImage] = useState('');
   const [userResponseText, setUserResponseText] = useState('');
+  const hasNeo4jData = neo4jData && neo4jData.length > 0;
 
   let image = null;
   let source = null;
@@ -89,6 +91,7 @@ const UserResults = ({ neo4jData, isConditionMet, loading }) => {
       >
         {modalImage && <img src={modalImage} alt="${subject.name}" style={{ width: '100%' }} />}
       </Modal>
+      {hasNeo4jData && <RelevantResult urls={neo4jData[0].subject.sources} keywords={neo4jData[0].subject.name} />}
     </div>
   );
 };
