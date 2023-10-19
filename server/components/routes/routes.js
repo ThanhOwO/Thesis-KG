@@ -222,4 +222,47 @@ router.post('/fact', async (req, res) => {
   }
 });
 
+//Admin add triple to neo4j
+router.post('/create', async (req, res) => {
+  const session = driver.session();
+
+  try {
+    const { foodName, relation, locationName } = req.body;
+
+    // Check if the relationship already exists
+    const checkExistingQuery = `
+      MATCH (food:Food {foodName: $foodName})-[:${relation}]->(location:Location {locationName: $locationName})
+      RETURN food, location
+    `;
+
+    const result = await session.run(checkExistingQuery, { foodName, locationName, relation });
+
+    if (result.records.length > 0) {
+      // Relationship already exists
+      res.json({ message: 'Relationship already exists in Neo4j.' });
+    } else {
+      // If the relationship doesn't exist, create it
+      const createRelationshipQuery = `
+        MERGE (food:Food {foodName: $foodName})
+        MERGE (location:Location {locationName: $locationName})
+        MERGE (food)-[:${relation}]->(location)
+        RETURN food, location
+      `;
+
+      const relationshipResult = await session.run(createRelationshipQuery, { foodName, locationName });
+
+      if (relationshipResult.records.length > 0) {
+        res.json({ message: 'Relationship created successfully.' });
+      } else {
+        res.status(500).json({ error: 'Failed to create the relationship.' });
+      }
+    }
+  } catch (error) {
+    console.error('Error creating relationship:', error);
+    res.status(500).json({ error: 'An error occurred' });
+  } finally {
+    await session.close();
+  }
+});
+
 module.exports = router;
