@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { message } from 'antd';
 
 const useNeo4j = () => {
   const fetchDataFromNeo4j = async (subject, object, relation) => {
@@ -15,7 +16,41 @@ const useNeo4j = () => {
     }
   };
 
-  return { fetchDataFromNeo4j };
+  const addTripleToNeo4j = async (foodName, relation, locationName) => {
+    try {
+      const response = await axios.post('http://localhost:8080/neo4j/create', {
+        foodName,
+        relation,
+        locationName,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error adding triple to Neo4j:', error);
+      return null;
+    }
+  };
+
+  const fetchAllLocations = async () => {
+    try {
+      const response = await axios.get('http://localhost:8080/neo4j/locations');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching locations:', error);
+      return null;
+    }
+  };
+
+  const fetchAllRelations = async () => {
+    try {
+      const response = await axios.get('http://localhost:8080/neo4j/relations');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching relations:', error);
+      return null;
+    }
+  };
+
+  return { fetchDataFromNeo4j, addTripleToNeo4j, fetchAllLocations, fetchAllRelations };
 };
 
 export default useNeo4j;

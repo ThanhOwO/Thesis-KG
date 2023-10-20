@@ -8,7 +8,7 @@ function App () {
     switch (activeComponent) {
       case 'Integrate':
         return <Integrate />;
-      case 'Add Triple':
+      case 'AddTriple':
         return <AddTriple />;
       default:
         return null;

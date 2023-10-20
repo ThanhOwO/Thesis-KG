@@ -204,7 +204,7 @@ router.get('/neo4j', async (req, res) => {
   }
 });
 
-//fact checking
+//fact checking source
 router.post('/fact', async (req, res) => {
   try {
     const { urls, keywords } = req.body;
@@ -223,7 +223,7 @@ router.post('/fact', async (req, res) => {
 });
 
 //Admin add triple to neo4j
-router.post('/create', async (req, res) => {
+router.post('/neo4j/create', async (req, res) => {
   const session = driver.session();
 
   try {
@@ -239,7 +239,7 @@ router.post('/create', async (req, res) => {
 
     if (result.records.length > 0) {
       // Relationship already exists
-      res.json({ message: 'Relationship already exists in Neo4j.' });
+      res.json({status: 409, message: 'Relationship already exists in Neo4j.' });
     } else {
       // If the relationship doesn't exist, create it
       const createRelationshipQuery = `
@@ -252,7 +252,7 @@ router.post('/create', async (req, res) => {
       const relationshipResult = await session.run(createRelationshipQuery, { foodName, locationName });
 
       if (relationshipResult.records.length > 0) {
-        res.json({ message: 'Relationship created successfully.' });
+        res.json({status: 200, message: 'Relationship created successfully.' });
       } else {
         res.status(500).json({ error: 'Failed to create the relationship.' });
       }
@@ -264,5 +264,38 @@ router.post('/create', async (req, res) => {
     await session.close();
   }
 });
+
+//Fetch all locations
+router.get('/neo4j/locations', async (req, res) => {
+  const session = driver.session();
+
+  try {
+    const result = await session.run('MATCH (l:Location) RETURN l.locationName');
+    const locations = result.records.map((record) => record.get('l.locationName'));
+    res.json(locations);
+  } catch (error) {
+    console.error('Error fetching locations:', error);
+    res.status(500).json({ error: 'An error occurred' });
+  } finally {
+    await session.close();
+  }
+});
+
+//Fetch all relation types
+router.get('/neo4j/relations', async (req, res) => {
+  const session = driver.session();
+
+  try {
+    const result = await session.run('CALL db.relationshipTypes');
+    const relations = result.records.map((record) => record.get('relationshipType'));
+    res.json(relations);
+  } catch (error) {
+    console.error('Error fetching relations:', error);
+    res.status(500).json({ error: 'An error occurred' });
+  } finally {
+    await session.close();
+  }
+});
+
 
 module.exports = router;
