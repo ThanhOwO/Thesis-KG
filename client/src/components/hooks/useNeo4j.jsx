@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { message } from 'antd';
 
 const useNeo4j = () => {
   const fetchDataFromNeo4j = async (subject, object, relation) => {
@@ -16,12 +15,14 @@ const useNeo4j = () => {
     }
   };
 
-  const addTripleToNeo4j = async (foodName, relation, locationName) => {
+  const addTripleToNeo4j = async (foodName, relation, locationName, image, sources) => {
     try {
       const response = await axios.post('http://localhost:8080/neo4j/create', {
         foodName,
         relation,
         locationName,
+        image: image || '',
+        sources: sources || '',
       });
       return response.data;
     } catch (error) {

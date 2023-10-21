@@ -29,7 +29,7 @@ function AddTriple() {
 
   const onFinish = async (values) => {
     try {
-      const response = await addTripleToNeo4j(values.foodName, values.relation, values.locationName);
+      const response = await addTripleToNeo4j(values.foodName, values.relation, values.locationName, values.image, values.sources);
       if (response.status === 409) {
         message.warning('Relationship already exists in Neo4j');
       } else if (response.status === 200) {
@@ -37,7 +37,7 @@ function AddTriple() {
       } else {
         message.error('Failed to create the relationship');
       }
-      console.log("Response: ", response)
+      console.log("Data: ", values)
     } catch (error) {
       console.error('Error adding triple:', error);
       message.error('An error occurred');
@@ -62,18 +62,24 @@ function AddTriple() {
         </Form.Item>
         <Form.Item name="locationName" label="Location Name" rules={[{ required: true, message: 'Please select the location name' }]}>
           <Select
-             showSearch
-             filterOption={(input, option) =>
-               option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-             }
-             className="select" 
-            >
+            showSearch
+            filterOption={(input, option) =>
+              option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+            }
+            className="select" 
+          >
             {locations.map((location) => (
               <Option key={location} value={location}>
                 {location}
               </Option>
             ))}
           </Select>
+        </Form.Item>
+        <Form.Item name="image" label="Image (URL)" rules={[{ type: 'url', message: 'Please enter a valid URL' }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item name="sources" label="Source (URL)" rules={[{ type: 'url', message: 'Please enter a valid URL' }]}>
+          <Input />
         </Form.Item>
         <Form.Item className="form-item">
           <Button type="primary" htmlType="submit" className="button">

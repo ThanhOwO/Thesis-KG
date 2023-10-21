@@ -2,8 +2,8 @@ const express = require('express');
 const translate = require('translate-google');
 const neo4j = require('neo4j-driver');
 const { containsVietnameseDiacritics, executeNER, executeFactCheck } = require('../functions/functions');
+const { removeDiacritics } = require('../libs/libs')
 require('dotenv').config();
-const { exec } = require('child_process');
 
 
 const driver = neo4j.driver(
@@ -23,6 +23,14 @@ session
         session.close();
     });
 const router = express.Router();
+
+function removeVietnameseMarks(str) {
+  for (const [diacritic, base] of removeDiacritics) {
+    const regex = new RegExp(diacritic, 'g');
+    str = str.replace(regex, base);
+  }
+  return str;
+}
 
 //Translate Vietnamese text to English
 router.post('/translate', async (req, res) => {
@@ -227,7 +235,15 @@ router.post('/neo4j/create', async (req, res) => {
   const session = driver.session();
 
   try {
-    const { foodName, relation, locationName } = req.body;
+    const { foodName, relation, locationName, image, sources } = req.body;
+    const vieName = removeVietnameseMarks(foodName.toLowerCase());
+    //check existed node
+    const checkFoodQuery = `
+      MATCH (food:Food {foodName: $foodName})
+      RETURN food
+    `;
+
+    const foodResult = await session.run(checkFoodQuery, { foodName });
 
     // Check if the relationship already exists
     const checkExistingQuery = `
@@ -240,16 +256,33 @@ router.post('/neo4j/create', async (req, res) => {
     if (result.records.length > 0) {
       // Relationship already exists
       res.json({status: 409, message: 'Relationship already exists in Neo4j.' });
-    } else {
-      // If the relationship doesn't exist, create it
+    } else if (foodResult.records.length > 0) {
+      // Use the existing Food node
       const createRelationshipQuery = `
-        MERGE (food:Food {foodName: $foodName})
+        MATCH (food:Food {foodName: $foodName})
         MERGE (location:Location {locationName: $locationName})
         MERGE (food)-[:${relation}]->(location)
         RETURN food, location
       `;
 
       const relationshipResult = await session.run(createRelationshipQuery, { foodName, locationName });
+
+      if (relationshipResult.records.length > 0) {
+        res.json({ status: 200, message: 'Relationship created successfully.' });
+      } else {
+        res.status(500).json({ error: 'Failed to create the relationship.' });
+      }
+    }
+    else {
+      // If the relationship doesn't exist, create it
+      const createRelationshipQuery = `
+        MERGE (food:Food {foodName: $foodName, vieName: $vieName, image: $image, sources: $sources})
+        MERGE (location:Location {locationName: $locationName})
+        MERGE (food)-[:${relation}]->(location)
+        RETURN food, location
+      `;
+
+      const relationshipResult = await session.run(createRelationshipQuery, { foodName, locationName, vieName, image, sources });
 
       if (relationshipResult.records.length > 0) {
         res.json({status: 200, message: 'Relationship created successfully.' });
