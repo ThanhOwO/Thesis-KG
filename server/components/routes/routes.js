@@ -117,15 +117,17 @@ router.get('/neo4j', async (req, res) => {
     if (subject && object) {
       if (relation && (relation.toLowerCase() === 'food_in' || relation.toLowerCase() === 'specialty_in')) {
         cypherQuery = `
-          MATCH (food:Food)-[:${relation.toUpperCase()}]->(location:Location)
+          MATCH (food:Food)-[:${relation.toUpperCase()}]->(location:Location)-[:IN_REGION]->(region:Region)
           WHERE (food.vieName = $subject OR food.engName = $subject)
-          AND (location.lowerLocationName = $object)
+          AND ((location.lowerLocationName = $object) OR (region.lowerRegionDetail = $object))
           RETURN
             food.foodName AS foodName,
             food.image AS foodImage,
             food.sources AS foodSource,
             location.locationName AS locationName,
-            location.country AS locationCountry
+            location.country AS locationCountry,
+            region.regionDetail AS regionDetail,
+            region.regionName AS regionName
           LIMIT 10
         `;
         defaultRelation = relation.toUpperCase();
@@ -147,14 +149,16 @@ router.get('/neo4j', async (req, res) => {
     } else if (subject) {
       if (relation && (relation.toLowerCase() === 'food_in' || relation.toLowerCase() === 'specialty_in')) {
         cypherQuery = `
-          MATCH (food:Food)-[:${relation.toUpperCase()}]->(location:Location)
+          MATCH (food:Food)-[:${relation.toUpperCase()}]->(location:Location)-[:IN_REGION]->(region:Region)
           WHERE (food.vieName = $subject OR food.engName = $subject)
           RETURN
             food.foodName AS foodName,
             food.image AS foodImage,
             food.sources AS foodSource,
             location.locationName AS locationName,
-            location.country AS locationCountry
+            location.country AS locationCountry,
+            region.regionDetail AS regionDetail,
+            region.regionName AS regionName
           LIMIT 10
         `;
         defaultRelation = relation.toUpperCase();
@@ -164,14 +168,16 @@ router.get('/neo4j', async (req, res) => {
     } else if (object) {
       if (relation && (relation.toLowerCase() === 'food_in' || relation.toLowerCase() === 'specialty_in')) {
         cypherQuery = `
-          MATCH (food:Food)-[:${relation.toUpperCase()}]->(location:Location)
+          MATCH (food:Food)-[:${relation.toUpperCase()}]->(location:Location)-[:IN_REGION]->(region:Region)
           WHERE (location.lowerLocationName = $object)
           RETURN
             food.foodName AS foodName,
             food.image AS foodImage,
             food.sources AS foodSource,
             location.locationName AS locationName,
-            location.country AS locationCountry
+            location.country AS locationCountry,
+            region.regionDetail AS regionDetail,
+            region.regionName AS regionName
           LIMIT 10
         `;
         defaultRelation = relation.toUpperCase();
@@ -199,7 +205,9 @@ router.get('/neo4j', async (req, res) => {
       object: {
         type: 'Location',
         name: record.get('locationName'),
-        country: record.get('locationCountry')
+        country: record.get('locationCountry'),
+        region_detail: record.get('regionDetail'),
+        region_name: record.get('regionName')
       }
     }));
 

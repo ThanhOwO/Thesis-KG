@@ -26,6 +26,8 @@ const Neo4jResults = ({ neo4jData, loading }) => {
                   <p><strong>Type:</strong> {data?.object ? JSON.stringify(data?.object.type) : 'N/A'}</p>
                   <p><strong>Name:</strong> {data?.object ? JSON.stringify(data?.object.name) : 'N/A'}</p>
                   <p><strong>Country:</strong> {data?.object ? JSON.stringify(data?.object.country) : 'N/A'}</p>
+                  <p><strong>Region detail:</strong> {data?.object ? JSON.stringify(data?.object.region_detail) : 'N/A'}</p>
+                  <p><strong>Region name:</strong> {data?.object ? JSON.stringify(data?.object.region_name) : 'N/A'}</p>
                 </div>
               </List.Item>
             )}
