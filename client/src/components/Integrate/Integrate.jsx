@@ -96,6 +96,13 @@ function Integrate() {
     inputText.toLowerCase().includes('where') ||
     inputText.toLowerCase().includes('which');
 
+    const specialLocation = 
+    inputText.toLowerCase().includes('an giang') ||
+    inputText.toLowerCase().includes('ha giang') ||
+    inputText.toLowerCase().includes('ha nam') ||
+    inputText.toLowerCase().includes('ha tinh') ||
+    inputText.toLowerCase().includes('ha noi');
+
     const finalResult = [];
     const uniqueRelations = new Set();
     let isConditionMet = 0;
@@ -105,9 +112,9 @@ function Integrate() {
       const relationEntities = nerEntities.filter((entity) => entity.label === 'RELATIONSHIP');
       const foodEntity = nerEntities.find((entity) => entity.label === 'FOOD');
       const locationEntity = nerEntities.find((entity) => entity.label === 'LOCATION');
-  
+
       if (relationEntities.length > 0) {
-        relationEntities.forEach((relationEntity) => {
+        relationEntities.forEach( async (relationEntity) => {
           if ((foodEntity && relationEntity) || (locationEntity && relationEntity)) {
             const subject = foodEntity ? foodEntity.text : ''
             const object = locationEntity ? locationEntity.text : ''
@@ -116,7 +123,6 @@ function Integrate() {
               relation: relationEntity.text,
               object,
             };
-    
             const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
             if (!uniqueRelations.has(relationKey)) {
               uniqueRelations.add(relationKey);
@@ -129,7 +135,6 @@ function Integrate() {
       } else if (foodEntity || locationEntity) {
           const subject = foodEntity ? foodEntity.text : '';
           const object = locationEntity ? locationEntity.text : '';
-
           const triple = {
             subject,
             relation: 'food in',
@@ -145,10 +150,14 @@ function Integrate() {
           console.log("Can't detect any relation");
         }
     } else {
+      let encountered404Error = false;
       openieTriples.forEach(async (triple) => {
         nerEntities.forEach(async (entity) => {
           const tripleSubjectLower = triple.subject.toLowerCase();
           const tripleObjectLower = triple.object.toLowerCase();
+          if (encountered404Error) {
+            return;
+          }
   
           const foodMatch = nerEntities.some(
             (entity) =>
@@ -163,7 +172,14 @@ function Integrate() {
           const relationMatch = entity.label === 'RELATIONSHIP' &&
           (triple.relation.toLowerCase().includes('food in') ||
             triple.relation.toLowerCase().includes('specialty in'));   
-            
+
+          if (specialLocation) {
+            const locationEntity = nerEntities.find(entity => entity.label === 'LOCATION');
+            if (locationEntity) {
+              triple.object = locationEntity.text;
+            }
+          }
+
           if (foodMatch && locationMatch && relationMatch) {
             let data = await fetchDataFromNeo4jForTriple(triple)
             if (isNeo4jDataEmpty(data)) {
@@ -206,7 +222,7 @@ function Integrate() {
   
     try {
       const neo4jDataResults = await Promise.all(dataPromises);
-      setNeo4jData(neo4jDataResults[0]);
+      setNeo4jData(neo4jDataResults[0] || neo4jDataResults[1]);
       console.log('Updated neo4jData:', neo4jDataResults);
     } catch (error) {
       console.error('Error fetching Neo4j data for final result:', error);
@@ -222,7 +238,6 @@ function Integrate() {
       fetchNeo4jDataForFinalResult();
     }
   }, [openieTriples, nerEntities]);  
-  
   
   return (
     <div className="app-container">
