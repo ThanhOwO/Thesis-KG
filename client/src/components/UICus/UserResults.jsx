@@ -5,7 +5,7 @@ import RelevantResult from './RelevantResult';
 
 const { Title } = Typography;
 
-const UserResults = ({ neo4jData, isConditionMet, loading }) => {
+const UserResults = ({ neo4jData, isConditionMet, loading, initialObject }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalImage, setModalImage] = useState('');
   const [userResponseText, setUserResponseText] = useState('');
@@ -19,33 +19,57 @@ const UserResults = ({ neo4jData, isConditionMet, loading }) => {
       let responseText = '';
 
       if (isConditionMet === 2 && neo4jData && neo4jData.length > 0) {
-        const { subject, object, relation } = neo4jData[0];
+        const { subject, relation } = neo4jData[0];
         const possibleResponses = relation === 'SPECIALTY_IN' ? [
-          `Yes, this ${subject.name} is the heart and soul of ${object.name}'s culinary identity.`,
-          `Without a doubt, ${subject.name} is a beloved staple in ${object.name}, enjoyed by locals and visitors alike.`,
-          `Undoubtedly, ${subject.name} is an integral part of ${object.name}'s culinary scene, loved by many.`,
-          `Yes, ${subject.name} is a celebrated specialty in ${object.name}.`
+          `Yes, this ${subject.name} is the heart and soul of ${initialObject}'s culinary identity.`,
+          `Without a doubt, ${subject.name} is a beloved staple in ${initialObject}, enjoyed by locals and visitors alike.`,
+          `Undoubtedly, ${subject.name} is an integral part of ${initialObject}'s culinary scene, loved by many.`,
+          `Yes, ${subject.name} is a celebrated specialty in ${initialObject}.`
         ] : [
-          `Indeed, ${subject.name} is highly popular and widely enjoyed in ${object.name}. `,
-          `Yes, ${subject.name} is highly popular and widely enjoyed in ${object.name}.`,
-          `Yes, ${subject.name} is indeed highly popular and widely enjoyed in ${object.name}.`,
+          `Indeed, ${subject.name} is highly popular and widely enjoyed in ${initialObject}. `,
+          `Yes, ${subject.name} is highly popular and widely enjoyed in ${initialObject}.`,
+          `Yes, ${subject.name} is indeed highly popular and widely enjoyed in ${initialObject}.`,
         ];
 
         const randomIndex = Math.floor(Math.random() * possibleResponses.length);
         responseText = possibleResponses[randomIndex];
       } else if (isConditionMet === 3 && neo4jData && neo4jData.length > 0) {
         const { subject, relation } = neo4jData[0];
+        const objectNames = neo4jData.map((data) => data.object.name).join(', ');
         const possibleResponses = relation === 'SPECIALTY_IN' ? [
-          `Sadly, no, while ${subject.name} is enjoyed in place or region you said but it hasn't taken center stage in the region's culinary story.`,
-          `Unfortunately, ${subject.name}, although known locally, is not prominent in the culinary heritage of the place you mentioned.`,
-          `Unfortunately, this particular specialty ${subject.name}, while available in place you mentioned, doesn't quite shine as a star in the region's culinary narrative.`,
-          `No, ${subject.name} isn't considered a specialty in place or region that you mentioned.`,
+          `No, ${subject.name} is not a ${initialObject} specialty. ${subject.name} is a traditional and popular dish in Vietnamese cuisine.`,
         ] : [
-          `If we talk about dishes like ${subject.name}, it is not only available where you are, it can be easily found in many other regions such as:`,
+          `If we talk about dishes like ${subject.name}, it is not only available in ${initialObject}, it can be easily found in many other provines such as: ${objectNames},...`,
         ];
 
         const randomIndex = Math.floor(Math.random() * possibleResponses.length);
         responseText = possibleResponses[randomIndex];
+      } else if (isConditionMet === 1 && neo4jData && neo4jData.length > 0) {
+        const objectNames = neo4jData.map((data) => data.object.name).join(', ');
+        const subjectNames = neo4jData.map((data) => data.subject.name).join(', ');
+        const uniqueSubjectNames = Array.from(new Set(neo4jData.map((data) => data.subject.name)));
+        const uniqueObjectNames = Array.from(new Set(neo4jData.map((data) => data.object.name)));
+
+        if (uniqueSubjectNames.length === 1) {
+          // All subjects are the same, create a response
+          const subjectName = uniqueSubjectNames[0];
+          const possibleResponses = [
+            `${subjectName} is a popular dish in various locations. It's beloved for its unique taste. Some of the best places to eat ${subjectName} in Vietnam include: ${objectNames},...`,
+            `Known for its deliciousness, ${subjectName} is enjoyed in various places such as: ${objectNames},...`,
+            `${subjectName} is a popular dish in Vietnamese cuisine. Some of the best places to eat ${subjectName} in Vietnam include: ${objectNames},...`,
+          ];
+          const randomIndex = Math.floor(Math.random() * possibleResponses.length);
+          responseText = possibleResponses[randomIndex];
+        } else if (uniqueObjectNames.length === 1) {
+          // All objects are the same, create a response
+          const objectName = uniqueObjectNames[0];
+          const possibleResponses = [
+            `When it comes to ${objectName}, there are many delicious dishes here such as: ${subjectNames},... Loved in many different places.`,
+            `There are many delicious dishes to try in ${objectName}. However, some of the most renowned and beloved dishes in ${objectName} include: ${subjectNames},...`
+          ];
+          const randomIndex = Math.floor(Math.random() * possibleResponses.length);
+          responseText = possibleResponses[randomIndex];
+        }
       } else {
         responseText = 'No specific information available from Neo4j.';
       }

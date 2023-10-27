@@ -90,7 +90,6 @@ function Integrate() {
   };
 
   const getFinalResult = () => {
-
     const isQueryWhatWhereWhich =
     inputText.toLowerCase().includes('what') ||
     inputText.toLowerCase().includes('where') ||
@@ -106,6 +105,7 @@ function Integrate() {
     const finalResult = [];
     const uniqueRelations = new Set();
     let isConditionMet = 0;
+    let initialObject = '';
 
     if (isQueryWhatWhereWhich) {
       isConditionMet = 1;
@@ -149,16 +149,16 @@ function Integrate() {
         } else {
           console.log("Can't detect any relation");
         }
+    } else if (!inputText) {
+      return { finalResult: [], isConditionMet: 0, initialObject: '' };
     } else {
-      let encountered404Error = false;
       openieTriples.forEach(async (triple) => {
         nerEntities.forEach(async (entity) => {
           const tripleSubjectLower = triple.subject.toLowerCase();
           const tripleObjectLower = triple.object.toLowerCase();
-          if (encountered404Error) {
-            return;
-          }
-  
+          const initialNER = nerEntities.find(entity => entity.label === 'LOCATION');
+          initialObject = initialNER.text
+
           const foodMatch = nerEntities.some(
             (entity) =>
               entity.text.toLowerCase() === tripleSubjectLower && entity.label === 'FOOD'
@@ -168,7 +168,7 @@ function Integrate() {
             (entity) =>
               entity.text.toLowerCase() === tripleObjectLower && entity.label === 'LOCATION'
           );
-
+          
           const relationMatch = entity.label === 'RELATIONSHIP' &&
           (triple.relation.toLowerCase().includes('food in') ||
             triple.relation.toLowerCase().includes('specialty in'));   
@@ -179,7 +179,6 @@ function Integrate() {
               triple.object = locationEntity.text;
             }
           }
-
           if (foodMatch && locationMatch && relationMatch) {
             let data = await fetchDataFromNeo4jForTriple(triple)
             if (isNeo4jDataEmpty(data)) {
@@ -204,10 +203,10 @@ function Integrate() {
         });
       });
     }
-    return { finalResult, isConditionMet };
+    return { finalResult, isConditionMet, initialObject };
   };
 
-  const { finalResult, isConditionMet } = getFinalResult();
+  const { finalResult, isConditionMet, initialObject } = getFinalResult();
 
   const fetchNeo4jDataForFinalResult = async () => {
     const dataPromises = finalResult.map(async (triple) => {
@@ -260,7 +259,7 @@ function Integrate() {
         neo4jData={neo4jData}
         loading={loading}
       />
-      <UserResults neo4jData={neo4jData} isConditionMet={isConditionMet} loading={loading}/>
+      <UserResults neo4jData={neo4jData} isConditionMet={isConditionMet} loading={loading} initialObject={initialObject}/>
     </div>
   );
 }

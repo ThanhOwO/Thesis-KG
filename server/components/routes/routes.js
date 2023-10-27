@@ -120,6 +120,7 @@ router.get('/neo4j', async (req, res) => {
           MATCH (food:Food)-[:${relation.toUpperCase()}]->(location:Location)-[:IN_REGION]->(region:Region)
           WHERE (food.vieName = $subject OR food.engName = $subject)
           AND ((location.lowerLocationName = $object) OR (region.lowerRegionDetail = $object))
+          WITH food, location, region, rand() AS random
           RETURN
             food.foodName AS foodName,
             food.image AS foodImage,
@@ -128,29 +129,19 @@ router.get('/neo4j', async (req, res) => {
             location.country AS locationCountry,
             region.regionDetail AS regionDetail,
             region.regionName AS regionName
+          ORDER BY random
           LIMIT 10
         `;
         defaultRelation = relation.toUpperCase();
       } else {
         return res.status(400).json({ error: 'Invalid relation. Please provide valid relation.' });
-      //   cypherQuery = `
-      //    MATCH (food:Food)
-      //    WHERE food.vieName = $subject OR food.engName = $subject
-      //    MATCH (location:Location {lowerLocationName: $object})
-      //    RETURN
-      //      food.foodName AS foodName,
-      //      food.image AS foodImage,
-      //      food.sources AS foodSource,
-      //      location.locationName AS locationName,
-      //      location.country AS locationCountry
-      //    LIMIT 10
-      //  `;
       }
     } else if (subject) {
       if (relation && (relation.toLowerCase() === 'food_in' || relation.toLowerCase() === 'specialty_in')) {
         cypherQuery = `
           MATCH (food:Food)-[:${relation.toUpperCase()}]->(location:Location)-[:IN_REGION]->(region:Region)
           WHERE (food.vieName = $subject OR food.engName = $subject)
+          WITH food, location, region, rand() AS random
           RETURN
             food.foodName AS foodName,
             food.image AS foodImage,
@@ -159,6 +150,7 @@ router.get('/neo4j', async (req, res) => {
             location.country AS locationCountry,
             region.regionDetail AS regionDetail,
             region.regionName AS regionName
+          ORDER BY random
           LIMIT 10
         `;
         defaultRelation = relation.toUpperCase();
@@ -170,6 +162,7 @@ router.get('/neo4j', async (req, res) => {
         cypherQuery = `
           MATCH (food:Food)-[:${relation.toUpperCase()}]->(location:Location)-[:IN_REGION]->(region:Region)
           WHERE (location.lowerLocationName = $object)
+          WITH food, location, region, rand() AS random
           RETURN
             food.foodName AS foodName,
             food.image AS foodImage,
@@ -178,6 +171,7 @@ router.get('/neo4j', async (req, res) => {
             location.country AS locationCountry,
             region.regionDetail AS regionDetail,
             region.regionName AS regionName
+          ORDER BY random
           LIMIT 10
         `;
         defaultRelation = relation.toUpperCase();
