@@ -120,7 +120,6 @@ router.get('/neo4j', async (req, res) => {
           MATCH (food:Food)-[:${relation.toUpperCase()}]->(location:Location)-[:IN_REGION]->(region:Region)
           WHERE (food.vieName = $subject OR food.engName = $subject)
           AND ((location.lowerLocationName = $object) OR (region.lowerRegionDetail = $object))
-          WITH food, location, region, rand() AS random
           RETURN
             food.foodName AS foodName,
             food.image AS foodImage,
@@ -129,7 +128,6 @@ router.get('/neo4j', async (req, res) => {
             location.country AS locationCountry,
             region.regionDetail AS regionDetail,
             region.regionName AS regionName
-          ORDER BY random
           LIMIT 10
         `;
         defaultRelation = relation.toUpperCase();
@@ -171,7 +169,7 @@ router.get('/neo4j', async (req, res) => {
             location.country AS locationCountry,
             region.regionDetail AS regionDetail,
             region.regionName AS regionName
-          ORDER BY random
+          ORDER BY rand()
           LIMIT 10
         `;
         defaultRelation = relation.toUpperCase();
