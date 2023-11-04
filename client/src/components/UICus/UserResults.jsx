@@ -70,6 +70,11 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject }) => {
           const randomIndex = Math.floor(Math.random() * possibleResponses.length);
           responseText = possibleResponses[randomIndex];
         }
+      } else if (isConditionMet === 4 && neo4jData && neo4jData.length > 0) {
+        const { subject } = neo4jData[0];
+        const possibleResponses = subject.temporal
+        console.log("HEY! This is user result for temporal question.")
+        responseText = possibleResponses;
       } else {
         responseText = 'No specific information available from Neo4j.';
       }

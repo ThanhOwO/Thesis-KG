@@ -107,6 +107,26 @@ function Integrate() {
     let isConditionMet = 0;
     let initialObject = '';
 
+    const temporalCheck = nerEntities.filter((entity) => entity.label === 'TEMPORAL');
+    const foodEntity = nerEntities.find((entity) => entity.label === 'FOOD');
+
+    if (temporalCheck.length > 0) {
+      isConditionMet = 4;
+      const subject = foodEntity ? foodEntity.text : '';
+          const object = '';
+          const triple = {
+            subject,
+            relation: 'food in',
+            object,
+          };
+
+      const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
+      if (!uniqueRelations.has(relationKey)) {
+        uniqueRelations.add(relationKey);
+        finalResult.push(triple);
+      }
+    }
+
     if (isQueryWhatWhereWhich) {
       isConditionMet = 1;
       const relationEntities = nerEntities.filter((entity) => entity.label === 'RELATIONSHIP');

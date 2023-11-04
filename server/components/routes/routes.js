@@ -124,6 +124,7 @@ router.get('/neo4j', async (req, res) => {
             food.foodName AS foodName,
             food.image AS foodImage,
             food.sources AS foodSource,
+            food.temporal AS foodTemporal,
             location.locationName AS locationName,
             location.country AS locationCountry,
             region.regionDetail AS regionDetail,
@@ -144,6 +145,7 @@ router.get('/neo4j', async (req, res) => {
             food.foodName AS foodName,
             food.image AS foodImage,
             food.sources AS foodSource,
+            food.temporal AS foodTemporal,
             location.locationName AS locationName,
             location.country AS locationCountry,
             region.regionDetail AS regionDetail,
@@ -165,6 +167,7 @@ router.get('/neo4j', async (req, res) => {
             food.foodName AS foodName,
             food.image AS foodImage,
             food.sources AS foodSource,
+            food.temporal AS foodTemporal,
             location.locationName AS locationName,
             location.country AS locationCountry,
             region.regionDetail AS regionDetail,
@@ -191,7 +194,8 @@ router.get('/neo4j', async (req, res) => {
         type: 'Food',
         name: record.get('foodName'),
         image: record.get('foodImage'),
-        sources: record.get('foodSource')
+        sources: record.get('foodSource'),
+        temporal: record.get('foodTemporal')
       },
       relation: defaultRelation,
       object: {
