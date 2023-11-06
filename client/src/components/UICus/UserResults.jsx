@@ -37,7 +37,7 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject }) => {
         const { subject, relation } = neo4jData[0];
         const objectNames = neo4jData.map((data) => data.object.name).join(', ');
         const possibleResponses = relation === 'SPECIALTY_IN' ? [
-          `No, ${subject.name} is not a ${initialObject} specialty. ${subject.name} is a traditional and popular dish in Vietnamese cuisine.`,
+          `No, ${subject.name} is not a ${initialObject}'s specialty. ${subject.name} is a traditional and popular dish in Vietnamese cuisine.`,
         ] : [
           `If we talk about dishes like ${subject.name}, it is not only available in ${initialObject}, it can be easily found in many other provines such as: ${objectNames},...`,
         ];
@@ -76,7 +76,13 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject }) => {
         console.log("HEY! This is user result for temporal question.")
         responseText = possibleResponses;
       } else {
-        responseText = 'No specific information available from Neo4j.';
+        const possibleResponses = [
+          `I can not understand the question. Please try again with specific question about Vietnamese cuisine.`,
+          `I can not get any information with your question. Please try again!`,
+          `No specific information available. Please try again!`
+        ];
+        const randomIndex = Math.floor(Math.random() * possibleResponses.length);
+        responseText = possibleResponses[randomIndex];
       }
 
       setUserResponseText(responseText);

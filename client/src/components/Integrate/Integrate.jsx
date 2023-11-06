@@ -177,7 +177,7 @@ function Integrate() {
           const tripleSubjectLower = triple.subject.toLowerCase();
           const tripleObjectLower = triple.object.toLowerCase();
           const initialNER = nerEntities.find(entity => entity.label === 'LOCATION');
-          initialObject = initialNER.text
+          initialObject = initialNER ? initialNER.text : '';
 
           const foodMatch = nerEntities.some(
             (entity) =>
