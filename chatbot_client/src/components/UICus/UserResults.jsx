@@ -92,7 +92,7 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject }) => {
     };
 
     calculateResponseText();
-  }, [neo4jData, isConditionMet]);
+  }, [neo4jData, isConditionMet, initialObject]);
 
   if (neo4jData && neo4jData.length > 0) {
     const { subject } = neo4jData[0];

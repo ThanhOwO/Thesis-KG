@@ -15,8 +15,9 @@ function IntegrateUI() {
   const [inputError, setInputError] = useState(false);
   const { fetchDataFromNeo4j } = useNeo4j();
   const [neo4jData, setNeo4jData] = useState([]);
-  const [userInputText, setUserInputText] = useState('');
-  const [chat, setChat] = useState([]);
+  const [message, setMessage] = useState([])
+  const [userInput, setUserInput] = useState('')
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleExtractAndAnalyze = async () => {
     if (inputText.trim() === '') {
@@ -243,6 +244,7 @@ function IntegrateUI() {
       const neo4jDataResults = await Promise.all(dataPromises);
       setNeo4jData(neo4jDataResults[0] || neo4jDataResults[1]);
       console.log('Updated neo4jData:', neo4jDataResults);
+      setIsProcessing(true);
     } catch (error) {
       console.error('Error fetching Neo4j data for final result:', error);
     }
@@ -260,23 +262,37 @@ function IntegrateUI() {
   
   //----------------------------------------------------------------UI Part----------------------------------------------------------------------
 
-  useEffect(() => {
-    // Trigger handleExtractAndAnalyze when the chat state is updated
-    if (chat.length > 0 && chat[chat.length - 1].type === 'user') {
-      handleExtractAndAnalyze(chat[chat.length - 1].message);
-    }
-  }, [chat]);
-
-  const handleSendClick = async () => {
-    setInputText(userInputText)
-    if (userInputText.trim() !== '') {
-      // Update the chat with the user's input
-      setChat([...chat, { type: 'user', message: userInputText }]);
-
-      // Reset the user input field
-      setUserInputText('');
-    }
+  const handleSend = async () => {
+    setInputText(userInput);
+    setMessage([
+      ...message,
+      { message: userInput, type: 'user' },
+    ]);
+    setUserInput('')
   };
+
+  useEffect(() => {
+    if (inputText.length > 0) {
+      handleExtractAndAnalyze();
+    }
+  }, [inputText]);  
+
+  useEffect(() => {
+    if (isProcessing) {
+      setMessage([
+        ...message,
+        { 
+          message: {
+            neo4jData, 
+            isConditionMet, 
+            initialObject,
+          }, type: 'bot'
+        }
+      ]);
+      console.log("data",neo4jData, isConditionMet, initialObject)
+      setIsProcessing(false);
+    }
+  }, [isProcessing, message, neo4jData, isConditionMet, initialObject]);
 
   return (
     <div className='App'>
@@ -296,38 +312,43 @@ function IntegrateUI() {
       </div>
       <div className='main'>
       <div className='chats'>
-        {chat.map((message, index) => (
-          <div key={index} className={`chat ${message.type}`}>
-            {message.type === 'user' ? (
-              <img className='chatImg' src={userIcon} alt='' />
-            ) : (
-              <img className='chatImg' src={gptImgLogo} alt='' />
-            )}
-            {message.message}
-            
-          </div>
-        ))}
-        <div className='chat bot'>
-          <img className='chatImg' src={gptImgLogo} alt='' />
-          <UserResults neo4jData={neo4jData} isConditionMet={isConditionMet} loading={loading} initialObject={initialObject}/>
+        {message.map((chat, index) => (
+          <div key={index}>
+            {chat.type === 'user' ? (
+              <div className='chat'>
+                <img className='chatImg' src={chat.type === 'user' ? userIcon : gptImgLogo} alt='' />
+                {chat.message}
+              </div>
+              ) : (
+                <div className='chat bot'>
+                <img className='chatImg' src={chat.type === 'bot' ? gptImgLogo : userIcon} alt='' />
+                <UserResults
+                  neo4jData={chat.message.neo4jData}
+                  isConditionMet={chat.message.isConditionMet}
+                  loading={loading}
+                  initialObject={chat.message.initialObject}
+                />
+            </div>
+              )}
         </div>
+        ))}
       </div>
         <div className='chatFooter'>
           <div className='inp'>
             <input
               type='text'
               placeholder='Send a message...'
-              value={userInputText}
-              onChange={(e) => setUserInputText(e.target.value)}
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
               className={inputError ? 'input-error' : ''}
             />
             <Button 
               className='send' 
-              onClick={handleSendClick} 
-              disabled={userInputText.length === 0}
-              style={{ backgroundColor: userInputText.length > 0 ? 'rgb(0, 199, 13)' : 'rgba(0, 0, 0, 0)' }}
+              onClick={handleSend} 
+              disabled={userInput.length === 0}
+              style={{ backgroundColor: userInput.length > 0 ? 'rgb(0, 199, 13)' : 'rgba(0, 0, 0, 0)' }}
             >
-              <img src={userInputText.length > 0 ? whiteSend : sendBtn} alt='Send'  />
+              <img src={userInput.length > 0 ? whiteSend : sendBtn} alt='Send'  />
             </Button>
           </div>
           <p>My Chat can make mistakes. Consider checking important information.</p>
