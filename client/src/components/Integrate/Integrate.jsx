@@ -253,10 +253,10 @@ function Integrate() {
   };  
 
   useEffect(() => {
-    if (openieTriples.length > 0 || nerEntities.length > 0) {
+    if (nerEntities.length > 0) {
       fetchNeo4jDataForFinalResult();
     }
-  }, [openieTriples, nerEntities]);  
+  }, [nerEntities]);  
   
   return (
     <div className="app-container">
