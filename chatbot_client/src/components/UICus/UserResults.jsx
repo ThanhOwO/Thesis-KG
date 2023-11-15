@@ -75,7 +75,7 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject }) => {
         const possibleResponses = subject.temporal
         console.log("HEY! This is user result for temporal question.")
         responseText = possibleResponses;
-      } else if (isConditionMet === 404) {
+      } else if (isConditionMet === 5) {
         const possibleResponses = `Hello! How can I help you?`
         responseText = possibleResponses
       } else {
@@ -92,7 +92,7 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject }) => {
     };
 
     calculateResponseText();
-  }, [neo4jData, isConditionMet]);
+  }, [neo4jData, isConditionMet, initialObject]);
 
   if (neo4jData && neo4jData.length > 0) {
     const { subject } = neo4jData[0];
@@ -106,7 +106,7 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject }) => {
         <Spin className="loading-indicator" style={{ margin: '10px' }} />
       ) : (
         <div className="chat-text">
-          <p>{userResponseText}</p>
+          <p className='botText'>{userResponseText}</p>
           {image && (
             <img
               src={image}

@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import './styles.scss';
-import { Button } from 'antd';
+import { Button, Spin } from 'antd';
 import useNeo4j from '../hooks/useNeo4j';
 import UserResults from '../UICus/UserResults';
-import { gptlogo, addBtn, saved, rocket, userIcon, gptImgLogo, sendBtn, msgIcon, home, whiteSend } from '../../assets';
+import { ClearOutlined } from '@ant-design/icons'
+import { gptlogo, saved, rocket, userIcon, gptImgLogo, sendBtn, msgIcon, home, whiteSend } from '../../assets';
 
 
 function IntegrateUI() {
@@ -15,8 +16,15 @@ function IntegrateUI() {
   const [inputError, setInputError] = useState(false);
   const { fetchDataFromNeo4j } = useNeo4j();
   const [neo4jData, setNeo4jData] = useState([]);
-  const [userInputText, setUserInputText] = useState('');
-  const [chat, setChat] = useState([]);
+  const [message, setMessage] = useState([]);
+  const [userInput, setUserInput] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isConditionMet, setIsConditionMet] = useState(0)
+  const [initialObject, setInitialObject] = useState('')
+  const msgEnd = useRef(null)
+  const handleEnter = async (e) => {
+    if (e.key == 'Enter') await handleSend()
+  }
 
   const handleExtractAndAnalyze = async () => {
     if (inputText.trim() === '') {
@@ -89,60 +97,85 @@ function IntegrateUI() {
     }
   };
 
-  const getFinalResult = () => {
-    const isQueryWhatWhereWhich =
-    inputText.toLowerCase().includes('what') ||
-    inputText.toLowerCase().includes('where') ||
-    inputText.toLowerCase().includes('which');
+  useEffect(() => {
+    const getFinalResult = () => {
+      const hello = 
+      inputText.toLocaleLowerCase().includes('hello') || 
+      inputText.toLocaleLowerCase().includes('hi');
 
-    const specialLocation = 
-    inputText.toLowerCase().includes('an giang') ||
-    inputText.toLowerCase().includes('ha giang') ||
-    inputText.toLowerCase().includes('ha nam') ||
-    inputText.toLowerCase().includes('ha tinh') ||
-    inputText.toLowerCase().includes('ha noi');
-
-    const finalResult = [];
-    const uniqueRelations = new Set();
-    let isConditionMet = 0;
-    let initialObject = '';
-
-    const temporalCheck = nerEntities.filter((entity) => entity.label === 'TEMPORAL');
-    const foodEntity = nerEntities.find((entity) => entity.label === 'FOOD');
-
-    if (temporalCheck.length > 0) {
-      isConditionMet = 4;
-      const subject = foodEntity ? foodEntity.text : '';
-          const object = '';
-          const triple = {
-            subject,
-            relation: 'food in',
-            object,
-          };
-
-      const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
-      if (!uniqueRelations.has(relationKey)) {
-        uniqueRelations.add(relationKey);
-        finalResult.push(triple);
-      }
-    }
-
-    if (isQueryWhatWhereWhich) {
-      isConditionMet = 1;
-      const relationEntities = nerEntities.filter((entity) => entity.label === 'RELATIONSHIP');
+      const isQueryWhatWhereWhich =
+      inputText.toLowerCase().includes('what') ||
+      inputText.toLowerCase().includes('where') ||
+      inputText.toLowerCase().includes('which');
+  
+      const specialLocation = 
+      inputText.toLowerCase().includes('an giang') ||
+      inputText.toLowerCase().includes('ha giang') ||
+      inputText.toLowerCase().includes('ha nam') ||
+      inputText.toLowerCase().includes('ha tinh') ||
+      inputText.toLowerCase().includes('ha noi');
+  
+      const finalResult = [];
+      const uniqueRelations = new Set();
+      let isConditionMet = 0;
+      let initialObject = '';
+  
+      const temporalCheck = nerEntities.filter((entity) => entity.label === 'TEMPORAL');
       const foodEntity = nerEntities.find((entity) => entity.label === 'FOOD');
-      const locationEntity = nerEntities.find((entity) => entity.label === 'LOCATION');
-
-      if (relationEntities.length > 0) {
-        relationEntities.forEach( async (relationEntity) => {
-          if ((foodEntity && relationEntity) || (locationEntity && relationEntity)) {
-            const subject = foodEntity ? foodEntity.text : ''
-            const object = locationEntity ? locationEntity.text : ''
+  
+      if (temporalCheck.length > 0) {
+        isConditionMet = 4;
+        const subject = foodEntity ? foodEntity.text : '';
+            const object = '';
             const triple = {
               subject,
-              relation: relationEntity.text,
+              relation: 'food in',
               object,
             };
+  
+        const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
+        if (!uniqueRelations.has(relationKey)) {
+          uniqueRelations.add(relationKey);
+          finalResult.push(triple);
+        }
+      }
+      if (hello) {
+        isConditionMet = 5
+      }
+      if (isQueryWhatWhereWhich) {
+        isConditionMet = 1;
+        const relationEntities = nerEntities.filter((entity) => entity.label === 'RELATIONSHIP');
+        const foodEntity = nerEntities.find((entity) => entity.label === 'FOOD');
+        const locationEntity = nerEntities.find((entity) => entity.label === 'LOCATION');
+  
+        if (relationEntities.length > 0) {
+          relationEntities.forEach( async (relationEntity) => {
+            if ((foodEntity && relationEntity) || (locationEntity && relationEntity)) {
+              const subject = foodEntity ? foodEntity.text : ''
+              const object = locationEntity ? locationEntity.text : ''
+              const triple = {
+                subject,
+                relation: relationEntity.text,
+                object,
+              };
+              const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
+              if (!uniqueRelations.has(relationKey)) {
+                uniqueRelations.add(relationKey);
+                finalResult.push(triple);
+              }
+            } else {
+              console.log("Can't detect any relation");
+            }
+          });
+        } else if (foodEntity || locationEntity) {
+            const subject = foodEntity ? foodEntity.text : '';
+            const object = locationEntity ? locationEntity.text : '';
+            const triple = {
+              subject,
+              relation: 'food in',
+              object,
+            };
+  
             const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
             if (!uniqueRelations.has(relationKey)) {
               uniqueRelations.add(relationKey);
@@ -151,84 +184,70 @@ function IntegrateUI() {
           } else {
             console.log("Can't detect any relation");
           }
-        });
-      } else if (foodEntity || locationEntity) {
-          const subject = foodEntity ? foodEntity.text : '';
-          const object = locationEntity ? locationEntity.text : '';
-          const triple = {
-            subject,
-            relation: 'food in',
-            object,
-          };
-
-          const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
-          if (!uniqueRelations.has(relationKey)) {
-            uniqueRelations.add(relationKey);
-            finalResult.push(triple);
-          }
-        } else {
-          console.log("Can't detect any relation");
-        }
-    } else if (!inputText) {
-      return { finalResult: [], isConditionMet: 404, initialObject: '' };
-    } else {
-      openieTriples.forEach(async (triple) => {
-        nerEntities.forEach(async (entity) => {
-          const tripleSubjectLower = triple.subject.toLowerCase();
-          const tripleObjectLower = triple.object.toLowerCase();
-          const initialNER = nerEntities.find(entity => entity.label === 'LOCATION');
-          initialObject = initialNER ? initialNER.text : '';
-
-          const foodMatch = nerEntities.some(
-            (entity) =>
-              entity.text.toLowerCase() === tripleSubjectLower && entity.label === 'FOOD'
-          );
-      
-          const locationMatch = nerEntities.some(
-            (entity) =>
-              entity.text.toLowerCase() === tripleObjectLower && entity.label === 'LOCATION'
-          );
-          
-          const relationMatch = entity.label === 'RELATIONSHIP' &&
-          (triple.relation.toLowerCase().includes('food in') ||
-            triple.relation.toLowerCase().includes('specialty in'));   
-
-          if (specialLocation) {
-            const locationEntity = nerEntities.find(entity => entity.label === 'LOCATION');
-            if (locationEntity) {
-              triple.object = locationEntity.text;
+      } else {
+        openieTriples.forEach(async (triple) => {
+          nerEntities.forEach(async (entity) => {
+            const tripleSubjectLower = triple.subject.toLowerCase();
+            const tripleObjectLower = triple.object.toLowerCase();
+            const initialNER = nerEntities.find(entity => entity.label === 'LOCATION');
+            initialObject = initialNER ? initialNER.text : '';
+  
+            const foodMatch = nerEntities.some(
+              (entity) =>
+                entity.text.toLowerCase() === tripleSubjectLower && entity.label === 'FOOD'
+            );
+        
+            const locationMatch = nerEntities.some(
+              (entity) =>
+                entity.text.toLowerCase() === tripleObjectLower && entity.label === 'LOCATION'
+            );
+            
+            const relationMatch = entity.label === 'RELATIONSHIP' &&
+            (triple.relation.toLowerCase().includes('food in') ||
+              triple.relation.toLowerCase().includes('specialty in'));   
+  
+            if (specialLocation) {
+              const locationEntity = nerEntities.find(entity => entity.label === 'LOCATION');
+              if (locationEntity) {
+                triple.object = locationEntity.text;
+              }
             }
-          }
-          if (foodMatch && locationMatch && relationMatch) {
-            let data = await fetchDataFromNeo4jForTriple(triple)
-            if (isNeo4jDataEmpty(data)) {
-              triple.object = '';
+            if (foodMatch && locationMatch && relationMatch) {
+              let data = await fetchDataFromNeo4jForTriple(triple)
+              if (isNeo4jDataEmpty(data)) {
+                triple.object = '';
+                isConditionMet = 3;
+              }
+            } else if (foodMatch && locationMatch) {
+              isConditionMet = 2;
+              const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
+              if (!uniqueRelations.has(relationKey)) {
+                uniqueRelations.add(relationKey);
+                finalResult.push(triple);
+              }
+            } else if (foodMatch && relationMatch) {
               isConditionMet = 3;
+              const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
+              if (!uniqueRelations.has(relationKey)) {
+                uniqueRelations.add(relationKey);
+                finalResult.push(triple);
+              }
             }
-          } else if (foodMatch && locationMatch) {
-            isConditionMet = 2;
-            const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
-            if (!uniqueRelations.has(relationKey)) {
-              uniqueRelations.add(relationKey);
-              finalResult.push(triple);
-            }
-          } else if (foodMatch && relationMatch) {
-            isConditionMet = 3;
-            const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
-            if (!uniqueRelations.has(relationKey)) {
-              uniqueRelations.add(relationKey);
-              finalResult.push(triple);
-            }
-          }
+          });
         });
-      });
+      }
+      return { finalResult, isConditionMet, initialObject };
+    };
+
+    if (nerEntities.length > 0) {
+      const { finalResult, isConditionMet, initialObject } = getFinalResult();
+      setIsConditionMet(isConditionMet)
+      setInitialObject(initialObject)
+      fetchNeo4jDataForFinalResult(finalResult);
     }
-    return { finalResult, isConditionMet, initialObject };
-  };
+  }, [nerEntities]);
 
-  const { finalResult, isConditionMet, initialObject } = getFinalResult();
-
-  const fetchNeo4jDataForFinalResult = async () => {
+  const fetchNeo4jDataForFinalResult = async (finalResult) => {
     const dataPromises = finalResult.map(async (triple) => {
       try {
         const data = await fetchDataFromNeo4jForTriple(triple);
@@ -243,6 +262,7 @@ function IntegrateUI() {
       const neo4jDataResults = await Promise.all(dataPromises);
       setNeo4jData(neo4jDataResults[0] || neo4jDataResults[1]);
       console.log('Updated neo4jData:', neo4jDataResults);
+      setIsProcessing(true);
     } catch (error) {
       console.error('Error fetching Neo4j data for final result:', error);
     }
@@ -251,39 +271,53 @@ function IntegrateUI() {
   const isNeo4jDataEmpty = (data) => {
     return !data || data.length === 0;
   };  
-
-  useEffect(() => {
-    if (openieTriples.length > 0 || nerEntities.length > 0) {
-      fetchNeo4jDataForFinalResult();
-    }
-  }, [openieTriples, nerEntities]);  
   
   //----------------------------------------------------------------UI Part----------------------------------------------------------------------
 
-  useEffect(() => {
-    // Trigger handleExtractAndAnalyze when the chat state is updated
-    if (chat.length > 0 && chat[chat.length - 1].type === 'user') {
-      handleExtractAndAnalyze(chat[chat.length - 1].message);
-    }
-  }, [chat]);
-
-  const handleSendClick = async () => {
-    setInputText(userInputText)
-    if (userInputText.trim() !== '') {
-      // Update the chat with the user's input
-      setChat([...chat, { type: 'user', message: userInputText }]);
-
-      // Reset the user input field
-      setUserInputText('');
-    }
+  const handleSend = async () => {
+    setInputText(userInput);
+    setMessage((prevMessages) => [
+      ...prevMessages,
+      { message: userInput, type: 'user' },
+    ]);
+    setUserInput('')
   };
+
+  useEffect(() => {
+    if (inputText.length > 0) {
+      handleExtractAndAnalyze();
+    }
+  }, [inputText]);  
+
+  useEffect(() => {
+    if (isProcessing) {
+      setMessage((prevMessages) => [
+        ...prevMessages,
+        {
+          message: {
+            neo4jData,
+            isConditionMet,
+            initialObject,
+            loading,
+          },
+          type: 'bot',
+        },
+      ]);
+      console.log("data",neo4jData, isConditionMet, initialObject)
+      setIsProcessing(false);
+    }
+  }, [isProcessing, message, neo4jData, isConditionMet, initialObject, loading]);
+
+  useEffect(() => {
+    msgEnd.current.scrollIntoView();
+  }, [message])
 
   return (
     <div className='App'>
       <div className='sideBar'>
           <div className='upperSide'>
             <div className='upperSideTop'><img src={gptlogo} alt='Logo' className='logo'/><span className='brand'>My Chatbot</span></div>
-            <button className='midBtn'><img src={addBtn} alt='new chat' className='addBtn'/> New Chat</button>
+            <button className='midBtn' onClick={()=>{window.location.reload()}}><ClearOutlined className='addBtn'/> Clear Chat</button>
             <div className='upperSideBottom'>
               <button className='query'><img src={msgIcon} alt='Query'/>Hi chat, I need help</button>
             </div>
@@ -296,41 +330,53 @@ function IntegrateUI() {
       </div>
       <div className='main'>
       <div className='chats'>
-        {chat.map((message, index) => (
-          <div key={index} className={`chat ${message.type}`}>
-            {message.type === 'user' ? (
-              <img className='chatImg' src={userIcon} alt='' />
-            ) : (
-              <img className='chatImg' src={gptImgLogo} alt='' />
-            )}
-            {message.message}
-            
+        {inputText.length === 0 && (
+          <div className='titleBackground'>
+            <h2>My Chatbot</h2>
           </div>
-        ))}
-        <div className='chat bot'>
-          <img className='chatImg' src={gptImgLogo} alt='' />
-          <UserResults neo4jData={neo4jData} isConditionMet={isConditionMet} loading={loading} initialObject={initialObject}/>
+        )}
+        {message.map((chat, index) => (
+          <div key={index}>
+            {chat.type === 'user' ? (
+              <div className='chat'>
+                <img className='chatImg' src={chat.type === 'user' ? userIcon : gptImgLogo} alt='' />
+                {chat.message}
+              </div>
+              ) : (
+                <div className='chat bot'>
+                  <img className='chatImg' src={chat.type === 'bot' ? gptImgLogo : userIcon} alt='' />
+                    <UserResults
+                      neo4jData={chat.message.neo4jData}
+                      isConditionMet={chat.message.isConditionMet}
+                      loading={chat.message.loading}
+                      initialObject={chat.message.initialObject}
+                    />
+                </div>
+              )}
         </div>
+        ))}
+        <div ref={msgEnd}/>
       </div>
         <div className='chatFooter'>
           <div className='inp'>
             <input
               type='text'
               placeholder='Send a message...'
-              value={userInputText}
-              onChange={(e) => setUserInputText(e.target.value)}
+              value={userInput}
+              onKeyDown={handleEnter}
+              onChange={(e) => setUserInput(e.target.value)}
               className={inputError ? 'input-error' : ''}
             />
             <Button 
               className='send' 
-              onClick={handleSendClick} 
-              disabled={userInputText.length === 0}
-              style={{ backgroundColor: userInputText.length > 0 ? 'rgb(0, 199, 13)' : 'rgba(0, 0, 0, 0)' }}
+              onClick={handleSend} 
+              disabled={userInput.length === 0}
+              style={{ backgroundColor: userInput.length > 0 ? 'rgb(0, 199, 13)' : 'rgba(0, 0, 0, 0)' }}
             >
-              <img src={userInputText.length > 0 ? whiteSend : sendBtn} alt='Send'  />
+              <img src={userInput.length > 0 ? whiteSend : sendBtn} alt='Send'  />
             </Button>
           </div>
-          <p>My Chat can make mistakes. Consider checking important information.</p>
+          <p>My Chatbot can make mistakes. Consider checking important information.</p>
         </div>
       </div>
     </div>

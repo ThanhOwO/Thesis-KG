@@ -1,12 +1,14 @@
 // src/App.js
 import React from 'react';
 import './App.scss';
-import { IntegrateUI } from './components';
+import { IntegrateUI } from './components/Integrate';
 
 
 function App() {
   return (
-    <IntegrateUI/>
+    <div>
+      <IntegrateUI/>
+    </div>
   );
 }
 
