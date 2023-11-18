@@ -17,6 +17,9 @@ function Integrate() {
   const [inputError, setInputError] = useState(false);
   const { fetchDataFromNeo4j } = useNeo4j();
   const [neo4jData, setNeo4jData] = useState([]);
+  const [isConditionMet, setIsConditionMet] = useState(0)
+  const [initialObject, setInitialObject] = useState('')
+  const [finalResult, setFinalResult] = useState([])
 
   const handleExtractAndAnalyze = async () => {
     if (inputText.trim() === '') {
@@ -89,60 +92,80 @@ function Integrate() {
     }
   };
 
-  const getFinalResult = () => {
-    const isQueryWhatWhereWhich =
-    inputText.toLowerCase().includes('what') ||
-    inputText.toLowerCase().includes('where') ||
-    inputText.toLowerCase().includes('which');
-
-    const specialLocation = 
-    inputText.toLowerCase().includes('an giang') ||
-    inputText.toLowerCase().includes('ha giang') ||
-    inputText.toLowerCase().includes('ha nam') ||
-    inputText.toLowerCase().includes('ha tinh') ||
-    inputText.toLowerCase().includes('ha noi');
-
-    const finalResult = [];
-    const uniqueRelations = new Set();
-    let isConditionMet = 0;
-    let initialObject = '';
-
-    const temporalCheck = nerEntities.filter((entity) => entity.label === 'TEMPORAL');
-    const foodEntity = nerEntities.find((entity) => entity.label === 'FOOD');
-
-    if (temporalCheck.length > 0) {
-      isConditionMet = 4;
-      const subject = foodEntity ? foodEntity.text : '';
-          const object = '';
-          const triple = {
-            subject,
-            relation: 'food in',
-            object,
-          };
-
-      const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
-      if (!uniqueRelations.has(relationKey)) {
-        uniqueRelations.add(relationKey);
-        finalResult.push(triple);
-      }
-    }
-
-    if (isQueryWhatWhereWhich) {
-      isConditionMet = 1;
-      const relationEntities = nerEntities.filter((entity) => entity.label === 'RELATIONSHIP');
+  
+  useEffect(() => {
+    const getFinalResult = async () => {
+      const isQueryWhatWhereWhich =
+      inputText.toLowerCase().includes('what') ||
+      inputText.toLowerCase().includes('where') ||
+      inputText.toLowerCase().includes('which');
+  
+      const specialLocation = 
+      inputText.toLowerCase().includes('an giang') ||
+      inputText.toLowerCase().includes('ha giang') ||
+      inputText.toLowerCase().includes('ha nam') ||
+      inputText.toLowerCase().includes('ha tinh') ||
+      inputText.toLowerCase().includes('ha noi');
+  
+      const finalResult = [];
+      const uniqueRelations = new Set();
+      let isConditionMet = 0;
+      let initialObject = '';
+  
+      const temporalCheck = nerEntities.filter((entity) => entity.label === 'TEMPORAL');
       const foodEntity = nerEntities.find((entity) => entity.label === 'FOOD');
-      const locationEntity = nerEntities.find((entity) => entity.label === 'LOCATION');
-
-      if (relationEntities.length > 0) {
-        relationEntities.forEach( async (relationEntity) => {
-          if ((foodEntity && relationEntity) || (locationEntity && relationEntity)) {
-            const subject = foodEntity ? foodEntity.text : ''
-            const object = locationEntity ? locationEntity.text : ''
+  
+      if (temporalCheck.length > 0) {
+        isConditionMet = 4;
+        const subject = foodEntity ? foodEntity.text : '';
+            const object = '';
             const triple = {
               subject,
-              relation: relationEntity.text,
+              relation: 'food in',
               object,
             };
+  
+        const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
+        if (!uniqueRelations.has(relationKey)) {
+          uniqueRelations.add(relationKey);
+          finalResult.push(triple);
+        }
+      }
+  
+      if (isQueryWhatWhereWhich) {
+        isConditionMet = 1;
+        const relationEntities = nerEntities.filter((entity) => entity.label === 'RELATIONSHIP');
+        const foodEntity = nerEntities.find((entity) => entity.label === 'FOOD');
+        const locationEntity = nerEntities.find((entity) => entity.label === 'LOCATION');
+  
+        if (relationEntities.length > 0) {
+          relationEntities.forEach( async (relationEntity) => {
+            if ((foodEntity && relationEntity) || (locationEntity && relationEntity)) {
+              const subject = foodEntity ? foodEntity.text : ''
+              const object = locationEntity ? locationEntity.text : ''
+              const triple = {
+                subject,
+                relation: relationEntity.text,
+                object,
+              };
+              const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
+              if (!uniqueRelations.has(relationKey)) {
+                uniqueRelations.add(relationKey);
+                finalResult.push(triple);
+              }
+            } else {
+              console.log("Can't detect any relation");
+            }
+          });
+        } else if (foodEntity || locationEntity) {
+            const subject = foodEntity ? foodEntity.text : '';
+            const object = locationEntity ? locationEntity.text : '';
+            const triple = {
+              subject,
+              relation: 'food in',
+              object,
+            };
+  
             const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
             if (!uniqueRelations.has(relationKey)) {
               uniqueRelations.add(relationKey);
@@ -151,84 +174,73 @@ function Integrate() {
           } else {
             console.log("Can't detect any relation");
           }
-        });
-      } else if (foodEntity || locationEntity) {
-          const subject = foodEntity ? foodEntity.text : '';
-          const object = locationEntity ? locationEntity.text : '';
-          const triple = {
-            subject,
-            relation: 'food in',
-            object,
-          };
-
-          const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
-          if (!uniqueRelations.has(relationKey)) {
-            uniqueRelations.add(relationKey);
-            finalResult.push(triple);
-          }
-        } else {
-          console.log("Can't detect any relation");
+      } else if (!inputText) {
+        return { finalResult: [], isConditionMet: 0, initialObject: '' };
+      } else {
+        await Promise.all(
+          openieTriples.map(async (triple) => {
+            if (specialLocation) {
+              const specialLocations = ['an giang', 'ha giang', 'ha nam', 'ha tinh', 'ha noi'];
+              for (const location of specialLocations) {
+                if (inputText.toLowerCase().includes(location)) {
+                  initialObject = location.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                  break;
+                }
+              }
+            } else {
+              initialObject = triple.object 
+            }
+            await Promise.all(
+              nerEntities.map(async (entity) => {
+                const newTriple = {
+                  subject: (nerEntities.find((entity) => entity.label === 'FOOD') || {}).text?.toLowerCase() || '',
+                  relation: (nerEntities.find((entity) => entity.label === 'RELATIONSHIP') || {}).text?.toLowerCase() || '',
+                  object: (nerEntities.find((entity) => entity.label === 'LOCATION') || {}).text?.toLowerCase() || '',
+                };
+    
+                let data = await fetchDataFromNeo4jForTriple(newTriple);
+                if (isNeo4jDataEmpty(data)) {
+                  isConditionMet = 3;
+                  newTriple.object = '';
+                  const relationKey = `${newTriple.subject}-${newTriple.relation}-${newTriple.object}`;
+                  if (!uniqueRelations.has(relationKey)) {
+                    uniqueRelations.add(relationKey);
+                    finalResult.push(newTriple);
+                  }
+                } else {
+                  isConditionMet = 2;
+                  const relationKey = `${newTriple.subject}-${newTriple.relation}-${newTriple.object}`;
+                  if (!uniqueRelations.has(relationKey)) {
+                    uniqueRelations.add(relationKey);
+                    finalResult.push(newTriple);
+                  }
+                }
+              })
+            );
+          })
+        );
+      }    
+      return { finalResult, isConditionMet, initialObject }; 
+    };
+    
+    const fetchData = async () => {
+      if (nerEntities.length > 0) {
+        try {
+          const { finalResult, isConditionMet, initialObject } = await getFinalResult();
+          setIsConditionMet(isConditionMet);
+          setInitialObject(initialObject);
+          setFinalResult(finalResult);
+          fetchNeo4jDataForFinalResult(finalResult);
+        } catch (error) {
+          console.error('Error fetching final result:', error);
         }
-    } else if (!inputText) {
-      return { finalResult: [], isConditionMet: 0, initialObject: '' };
-    } else {
-      openieTriples.forEach(async (triple) => {
-        nerEntities.forEach(async (entity) => {
-          const tripleSubjectLower = triple.subject.toLowerCase();
-          const tripleObjectLower = triple.object.toLowerCase();
-          const initialNER = nerEntities.find(entity => entity.label === 'LOCATION');
-          initialObject = initialNER ? initialNER.text : '';
+      }
+    };
 
-          const foodMatch = nerEntities.some(
-            (entity) =>
-              entity.text.toLowerCase() === tripleSubjectLower && entity.label === 'FOOD'
-          );
-      
-          const locationMatch = nerEntities.some(
-            (entity) =>
-              entity.text.toLowerCase() === tripleObjectLower && entity.label === 'LOCATION'
-          );
-          
-          const relationMatch = entity.label === 'RELATIONSHIP' &&
-          (triple.relation.toLowerCase().includes('food in') ||
-            triple.relation.toLowerCase().includes('specialty in'));   
+    fetchData()
+  }, [nerEntities]);
 
-          if (specialLocation) {
-            const locationEntity = nerEntities.find(entity => entity.label === 'LOCATION');
-            if (locationEntity) {
-              triple.object = locationEntity.text;
-            }
-          }
-          if (foodMatch && locationMatch && relationMatch) {
-            let data = await fetchDataFromNeo4jForTriple(triple)
-            if (isNeo4jDataEmpty(data)) {
-              triple.object = '';
-              isConditionMet = 3;
-            }
-          } else if (foodMatch && locationMatch) {
-            isConditionMet = 2;
-            const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
-            if (!uniqueRelations.has(relationKey)) {
-              uniqueRelations.add(relationKey);
-              finalResult.push(triple);
-            }
-          } else if (foodMatch && relationMatch) {
-            isConditionMet = 3;
-            const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
-            if (!uniqueRelations.has(relationKey)) {
-              uniqueRelations.add(relationKey);
-              finalResult.push(triple);
-            }
-          }
-        });
-      });
-    }
-    return { finalResult, isConditionMet, initialObject };
-  };
-
-  const { finalResult, isConditionMet, initialObject } = getFinalResult();
-
-  const fetchNeo4jDataForFinalResult = async () => {
+  const fetchNeo4jDataForFinalResult = async (finalResult) => {
     const dataPromises = finalResult.map(async (triple) => {
       try {
         const data = await fetchDataFromNeo4jForTriple(triple);
@@ -242,7 +254,7 @@ function Integrate() {
     try {
       const neo4jDataResults = await Promise.all(dataPromises);
       setNeo4jData(neo4jDataResults[0] || neo4jDataResults[1]);
-      console.log('Updated neo4jData:', neo4jDataResults);
+      console.log('Updated neo4jData:', neo4jDataResults, finalResult, isConditionMet, initialObject);
     } catch (error) {
       console.error('Error fetching Neo4j data for final result:', error);
     }
@@ -252,12 +264,6 @@ function Integrate() {
     return !data || data.length === 0;
   };  
 
-  useEffect(() => {
-    if (nerEntities.length > 0) {
-      fetchNeo4jDataForFinalResult();
-    }
-  }, [nerEntities]);  
-  
   return (
     <div className="app-container">
       <Title level={2}>Integrating Models</Title>
