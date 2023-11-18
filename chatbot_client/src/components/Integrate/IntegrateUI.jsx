@@ -98,11 +98,11 @@ function IntegrateUI() {
   };
 
   useEffect(() => {
-    const getFinalResult = () => {
+    const getFinalResult = async () => {
       const hello = 
       inputText.toLocaleLowerCase().includes('hello') || 
       inputText.toLocaleLowerCase().includes('hi');
-
+  
       const isQueryWhatWhereWhich =
       inputText.toLowerCase().includes('what') ||
       inputText.toLowerCase().includes('where') ||
@@ -185,66 +185,66 @@ function IntegrateUI() {
             console.log("Can't detect any relation");
           }
       } else {
-        openieTriples.forEach(async (triple) => {
-          nerEntities.forEach(async (entity) => {
-            const tripleSubjectLower = triple.subject.toLowerCase();
-            const tripleObjectLower = triple.object.toLowerCase();
-            const initialNER = nerEntities.find(entity => entity.label === 'LOCATION');
-            initialObject = initialNER ? initialNER.text : '';
-  
-            const foodMatch = nerEntities.some(
-              (entity) =>
-                entity.text.toLowerCase() === tripleSubjectLower && entity.label === 'FOOD'
-            );
-        
-            const locationMatch = nerEntities.some(
-              (entity) =>
-                entity.text.toLowerCase() === tripleObjectLower && entity.label === 'LOCATION'
-            );
-            
-            const relationMatch = entity.label === 'RELATIONSHIP' &&
-            (triple.relation.toLowerCase().includes('food in') ||
-              triple.relation.toLowerCase().includes('specialty in'));   
-  
+        await Promise.all(
+          openieTriples.map(async (triple) => {
             if (specialLocation) {
-              const locationEntity = nerEntities.find(entity => entity.label === 'LOCATION');
-              if (locationEntity) {
-                triple.object = locationEntity.text;
+              const specialLocations = ['an giang', 'ha giang', 'ha nam', 'ha tinh', 'ha noi'];
+              for (const location of specialLocations) {
+                if (inputText.toLowerCase().includes(location)) {
+                  initialObject = location.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                  break;
+                }
               }
+            } else {
+              initialObject = triple.object 
             }
-            if (foodMatch && locationMatch && relationMatch) {
-              let data = await fetchDataFromNeo4jForTriple(triple)
-              if (isNeo4jDataEmpty(data)) {
-                triple.object = '';
-                isConditionMet = 3;
-              }
-            } else if (foodMatch && locationMatch) {
-              isConditionMet = 2;
-              const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
-              if (!uniqueRelations.has(relationKey)) {
-                uniqueRelations.add(relationKey);
-                finalResult.push(triple);
-              }
-            } else if (foodMatch && relationMatch) {
-              isConditionMet = 3;
-              const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
-              if (!uniqueRelations.has(relationKey)) {
-                uniqueRelations.add(relationKey);
-                finalResult.push(triple);
-              }
-            }
-          });
-        });
+            await Promise.all(
+              nerEntities.map(async (entity) => {
+                const newTriple = {
+                  subject: (nerEntities.find((entity) => entity.label === 'FOOD') || {}).text?.toLowerCase() || '',
+                  relation: (nerEntities.find((entity) => entity.label === 'RELATIONSHIP') || {}).text?.toLowerCase() || '',
+                  object: (nerEntities.find((entity) => entity.label === 'LOCATION') || {}).text?.toLowerCase() || '',
+                };
+    
+                let data = await fetchDataFromNeo4jForTriple(newTriple);
+                if (isNeo4jDataEmpty(data)) {
+                  isConditionMet = 3;
+                  newTriple.object = '';
+                  const relationKey = `${newTriple.subject}-${newTriple.relation}-${newTriple.object}`;
+                  if (!uniqueRelations.has(relationKey)) {
+                    uniqueRelations.add(relationKey);
+                    finalResult.push(newTriple);
+                  }
+                } else {
+                  isConditionMet = 2;
+                  const relationKey = `${newTriple.subject}-${newTriple.relation}-${newTriple.object}`;
+                  if (!uniqueRelations.has(relationKey)) {
+                    uniqueRelations.add(relationKey);
+                    finalResult.push(newTriple);
+                  }
+                }
+              })
+            );
+          })
+        );
       }
       return { finalResult, isConditionMet, initialObject };
     };
 
-    if (nerEntities.length > 0) {
-      const { finalResult, isConditionMet, initialObject } = getFinalResult();
-      setIsConditionMet(isConditionMet)
-      setInitialObject(initialObject)
-      fetchNeo4jDataForFinalResult(finalResult);
-    }
+    const fetchData = async () => {
+      if (nerEntities.length > 0) {
+        try {
+          const { finalResult, isConditionMet, initialObject } = await getFinalResult();
+          setIsConditionMet(isConditionMet);
+          setInitialObject(initialObject);
+          fetchNeo4jDataForFinalResult(finalResult);
+        } catch (error) {
+          console.error('Error fetching final result:', error);
+        }
+      }
+    };
+
+    fetchData()
   }, [nerEntities]);
 
   const fetchNeo4jDataForFinalResult = async (finalResult) => {
@@ -262,11 +262,11 @@ function IntegrateUI() {
       const neo4jDataResults = await Promise.all(dataPromises);
       setNeo4jData(neo4jDataResults[0] || neo4jDataResults[1]);
       console.log('Updated neo4jData:', neo4jDataResults);
-      setIsProcessing(true);
+      setIsProcessing(true)
     } catch (error) {
       console.error('Error fetching Neo4j data for final result:', error);
     }
-  };  
+  };
 
   const isNeo4jDataEmpty = (data) => {
     return !data || data.length === 0;
@@ -276,7 +276,7 @@ function IntegrateUI() {
 
   const handleSend = async () => {
     setInputText(userInput);
-    setMessage((prevMessages) => [
+    setMessage((prevMessages) => [ 
       ...prevMessages,
       { message: userInput, type: 'user' },
     ]);

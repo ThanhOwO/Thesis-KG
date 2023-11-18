@@ -3,8 +3,6 @@ import { Spin, Typography, Modal } from 'antd';
 import './styles.scss';
 import RelevantResult from './RelevantResult';
 
-const { Title } = Typography;
-
 const UserResults = ({ neo4jData, isConditionMet, loading, initialObject }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalImage, setModalImage] = useState('');
