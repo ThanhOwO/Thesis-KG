@@ -23,7 +23,7 @@ function IntegrateUI() {
   const [initialObject, setInitialObject] = useState('')
   const msgEnd = useRef(null)
   const handleEnter = async (e) => {
-    if (e.key == 'Enter') await handleSend()
+    if (e.key == 'Enter' && !loading && userInput.trim() !== '') await handleSend()
   }
 
   const handleExtractAndAnalyze = async () => {
@@ -87,6 +87,8 @@ function IntegrateUI() {
       relation = 'food_in';
     } else if (triple.relation.toLowerCase().includes('specialty in')) {
       relation = 'specialty_in';
+    } else if (triple.relation.toLowerCase().includes('dish in')) {
+      relation = 'dish_in';
     }
     try {
       const data = await fetchDataFromNeo4j(subjectLower, objectLower, relation);
@@ -114,6 +116,9 @@ function IntegrateUI() {
       inputText.toLowerCase().includes('ha nam') ||
       inputText.toLowerCase().includes('ha tinh') ||
       inputText.toLowerCase().includes('ha noi');
+
+      const about = 
+      inputText.toLowerCase().includes('introduce yourself');
   
       const finalResult = [];
       const uniqueRelations = new Set();
@@ -141,6 +146,9 @@ function IntegrateUI() {
       }
       if (hello) {
         isConditionMet = 5
+      }
+      if (about) {
+        isConditionMet = 6
       }
       if (isQueryWhatWhereWhich) {
         isConditionMet = 1;
@@ -187,6 +195,7 @@ function IntegrateUI() {
       } else {
         await Promise.all(
           openieTriples.map(async (triple) => {
+            const nerLocationEntity = nerEntities.find((entity) => entity.label === 'LOCATION');
             if (specialLocation) {
               const specialLocations = ['an giang', 'ha giang', 'ha nam', 'ha tinh', 'ha noi'];
               for (const location of specialLocations) {
@@ -195,6 +204,8 @@ function IntegrateUI() {
                   break;
                 }
               }
+            } else if (nerLocationEntity && openieTriples.some((t) => t.object.toLowerCase() === nerLocationEntity.text.toLowerCase())) {
+              initialObject = nerLocationEntity.text;
             } else {
               initialObject = triple.object 
             }
@@ -306,7 +317,7 @@ function IntegrateUI() {
       console.log("data",neo4jData, isConditionMet, initialObject)
       setIsProcessing(false);
     }
-  }, [isProcessing, message, neo4jData, isConditionMet, initialObject, loading]);
+  }, [isProcessing, neo4jData, isConditionMet, initialObject, loading]);
 
   useEffect(() => {
     msgEnd.current.scrollIntoView();
@@ -319,7 +330,8 @@ function IntegrateUI() {
             <div className='upperSideTop'><img src={gptlogo} alt='Logo' className='logo'/><span className='brand'>My Chatbot</span></div>
             <button className='midBtn' onClick={()=>{window.location.reload()}}><ClearOutlined className='addBtn'/> Clear Chat</button>
             <div className='upperSideBottom'>
-              <button className='query'><img src={msgIcon} alt='Query'/>Hi chat, I need help</button>
+              <button className='query'><img src={msgIcon} alt='Query'/>Introduce yourself.</button>
+              <button className='query'><img src={msgIcon} alt='Query'/>Where can I find pho ?</button>
             </div>
           </div>
           <div className='lowerSide'>
@@ -367,14 +379,22 @@ function IntegrateUI() {
               onChange={(e) => setUserInput(e.target.value)}
               className={inputError ? 'input-error' : ''}
             />
-            <Button 
-              className='send' 
-              onClick={handleSend} 
-              disabled={userInput.length === 0}
-              style={{ backgroundColor: userInput.length > 0 ? 'rgb(0, 199, 13)' : 'rgba(0, 0, 0, 0)' }}
-            >
+          <Button 
+            className='send' 
+            onClick={handleSend} 
+            disabled={userInput.length === 0 || loading}
+            style={{ backgroundColor: userInput.length > 0 ? 'rgb(0, 199, 13)' : 'rgba(0, 0, 0, 0)' }}
+          >
+            {loading ? (
+              <div className="loading-dots">
+                <div></div>
+                <div></div>
+                <div></div>
+              </div>
+            ) : (
               <img src={userInput.length > 0 ? whiteSend : sendBtn} alt='Send'  />
-            </Button>
+            )}
+          </Button>
           </div>
           <p>My Chatbot can make mistakes. Consider checking important information.</p>
         </div>

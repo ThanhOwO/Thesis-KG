@@ -115,11 +115,11 @@ router.get('/neo4j', async (req, res) => {
     let defaultRelation;
 
     if (subject && object) {
-      if (relation && (relation.toLowerCase() === 'food_in' || relation.toLowerCase() === 'specialty_in')) {
+      if (relation && (relation.toLowerCase() === 'food_in' || relation.toLowerCase() === 'specialty_in' || relation.toLocaleLowerCase() === 'dish_in')) {
         cypherQuery = `
           MATCH (food:Food)-[:${relation.toUpperCase()}]->(location:Location)-[:IN_REGION]->(region:Region)
           WHERE (food.vieName = $subject OR food.engName = $subject)
-          AND ((location.lowerLocationName = $object) OR (region.lowerRegionDetail = $object))
+          AND ((location.lowerLocationName = $object) OR (region.lowerRegionDetail = $object) OR (location.noSpace = $object) OR (region.engName = $object))
           RETURN
             food.foodName AS foodName,
             food.image AS foodImage,
@@ -136,7 +136,7 @@ router.get('/neo4j', async (req, res) => {
         return res.status(400).json({ error: 'Invalid relation. Please provide valid relation.' });
       }
     } else if (subject) {
-      if (relation && (relation.toLowerCase() === 'food_in' || relation.toLowerCase() === 'specialty_in')) {
+      if (relation && (relation.toLowerCase() === 'food_in' || relation.toLowerCase() === 'specialty_in' || relation.toLocaleLowerCase() === 'dish_in')) {
         cypherQuery = `
           MATCH (food:Food)-[:${relation.toUpperCase()}]->(location:Location)-[:IN_REGION]->(region:Region)
           WHERE (food.vieName = $subject OR food.engName = $subject)
@@ -158,10 +158,10 @@ router.get('/neo4j', async (req, res) => {
         return res.status(400).json({ error: 'Invalid relation. Please provide valid relation.' });
       }
     } else if (object) {
-      if (relation && (relation.toLowerCase() === 'food_in' || relation.toLowerCase() === 'specialty_in')) {
+      if (relation && (relation.toLowerCase() === 'food_in' || relation.toLowerCase() === 'specialty_in' || relation.toLocaleLowerCase() === 'dish_in')) {
         cypherQuery = `
           MATCH (food:Food)-[:${relation.toUpperCase()}]->(location:Location)-[:IN_REGION]->(region:Region)
-          WHERE (location.lowerLocationName = $object)
+          WHERE (location.lowerLocationName = $object OR location.noSpace = $object)
           WITH food, location, region, rand() AS random
           RETURN
             food.foodName AS foodName,
