@@ -71,11 +71,21 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject }) => {
       } else if (isConditionMet === 4 && neo4jData && neo4jData.length > 0) {
         const { subject } = neo4jData[0];
         const possibleResponses = subject.temporal
-        console.log("HEY! This is user result for temporal question.")
         responseText = possibleResponses;
       } else if (isConditionMet === 5) {
-        const possibleResponses = `Hello! How can I help you?`
-        responseText = possibleResponses
+        const possibleResponses = [
+          `Hello there! 👋 How can I assist you today?`,
+          `Hello! Ready to explore the delicious world of Vietnamese cuisine with me? 😋`,
+          `Hi! How can I help you today? Ask me some question about Vietnamese dish.`
+        ];
+        const randomIndex = Math.floor(Math.random() * possibleResponses.length);
+        responseText = possibleResponses[randomIndex];
+      } else if (isConditionMet === 6) {
+        const possibleResponses = [
+          `I'm your go-to guide for exploring the rich tapestry of Vietnamese cuisine. Ask me anything about the history, locations, and fascinating details of dishes across all 63 provinces in Vietnam, and let's embark on a culinary journey together!`,
+        ];
+        const randomIndex = Math.floor(Math.random() * possibleResponses.length);
+        responseText = possibleResponses[randomIndex];
       } else {
         const possibleResponses = [
           `I can not understand the question. Please try again with specific question about Vietnamese cuisine.`,

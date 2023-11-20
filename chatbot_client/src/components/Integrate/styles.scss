@@ -216,3 +216,26 @@ body {
   margin: 0;
   font-size: 30px;
 }
+
+.loading-dots {
+  display: flex;
+  justify-content: space-between;
+  width: 24px;  /* Adjust as needed */
+}
+
+.loading-dots div {
+  width: 6px;   /* Adjust as needed */
+  height: 6px;  /* Adjust as needed */
+  background-color: #fff;  /* Adjust as needed */
+  border-radius: 50%;
+  animation: loading 1.5s infinite ease-in-out;
+}
+
+@keyframes loading {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}

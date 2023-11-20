@@ -179,6 +179,7 @@ function Integrate() {
       } else {
         await Promise.all(
           openieTriples.map(async (triple) => {
+            const nerLocationEntity = nerEntities.find((entity) => entity.label === 'LOCATION');
             if (specialLocation) {
               const specialLocations = ['an giang', 'ha giang', 'ha nam', 'ha tinh', 'ha noi'];
               for (const location of specialLocations) {
@@ -187,6 +188,8 @@ function Integrate() {
                   break;
                 }
               }
+            } else if (nerLocationEntity && openieTriples.some((t) => t.object.toLowerCase() === nerLocationEntity.text.toLowerCase())) {
+              initialObject = nerLocationEntity.text;
             } else {
               initialObject = triple.object 
             }
