@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import './styles.scss';
-import { Button, Spin } from 'antd';
+import { Button } from 'antd';
 import useNeo4j from '../hooks/useNeo4j';
 import UserResults from '../UICus/UserResults';
 import { ClearOutlined } from '@ant-design/icons'
@@ -42,9 +42,6 @@ function IntegrateUI() {
         text: inputText,
       });
       let transformedText = translateResponse.data.translatedText;
-      if (shouldApplyTransformation(translateResponse.data.translatedText)) {
-        transformedText = transformInput(translateResponse.data.translatedText);
-      }
       const extractResponse = await axios.post('http://localhost:9000', {
         annotators: 'openie',
         outputFormat: 'json',
@@ -61,23 +58,6 @@ function IntegrateUI() {
       setLoading(false);
     }
   };
-
-  const shouldApplyTransformation = (text) => {
-    const words = text.split(' ');
-    const isIndex = words.indexOf('is');
-    return isIndex !== -1 && words.length - isIndex <= 3;
-  };
-
-  function transformInput(originalInput) {
-    const parts = originalInput.split(' is ');
-    if (parts.length !== 2) {
-      return originalInput;
-    }
-    const subject = parts[1].trim();
-    const remainder = parts[0].trim();
-    const transformedInput = `${subject} is ${remainder}`;
-    return transformedInput;
-  }
 
   const fetchDataFromNeo4jForTriple = async (triple) => {
     const subjectLower = triple.subject ? triple.subject.toLowerCase() : '';

@@ -37,9 +37,9 @@ function Integrate() {
         text: inputText,
       });
       let transformedText = translateResponse.data.translatedText;
-      if (shouldApplyTransformation(translateResponse.data.translatedText)) {
-        transformedText = transformInput(translateResponse.data.translatedText);
-      }
+      // if (shouldApplyTransformation(translateResponse.data.translatedText)) {
+      //   transformedText = transformInput(translateResponse.data.translatedText);
+      // }
       const extractResponse = await axios.post('http://localhost:9000', {
         annotators: 'openie',
         outputFormat: 'json',
@@ -57,22 +57,22 @@ function Integrate() {
     }
   };
 
-  const shouldApplyTransformation = (text) => {
-    const words = text.split(' ');
-    const isIndex = words.indexOf('is');
-    return isIndex !== -1 && words.length - isIndex <= 3;
-  };
+  // const shouldApplyTransformation = (text) => {
+  //   const words = text.split(' ');
+  //   const isIndex = words.indexOf('is');
+  //   return isIndex !== -1 && words.length - isIndex <= 3;
+  // };
 
-  function transformInput(originalInput) {
-    const parts = originalInput.split(' is ');
-    if (parts.length !== 2) {
-      return originalInput;
-    }
-    const subject = parts[1].trim();
-    const remainder = parts[0].trim();
-    const transformedInput = `${subject} is ${remainder}`;
-    return transformedInput;
-  }
+  // function transformInput(originalInput) {
+  //   const parts = originalInput.split(' is ');
+  //   if (parts.length !== 2) {
+  //     return originalInput;
+  //   }
+  //   const subject = parts[1].trim();
+  //   const remainder = parts[0].trim();
+  //   const transformedInput = `${subject} is ${remainder}`;
+  //   return transformedInput;
+  // }
 
   const fetchDataFromNeo4jForTriple = async (triple) => {
     const subjectLower = triple.subject ? triple.subject.toLowerCase() : '';
@@ -82,6 +82,8 @@ function Integrate() {
       relation = 'food_in';
     } else if (triple.relation.toLowerCase().includes('specialty in')) {
       relation = 'specialty_in';
+    } else if (triple.relation.toLowerCase().includes('dish in')) {
+      relation = 'dish_in';
     }
     try {
       const data = await fetchDataFromNeo4j(subjectLower, objectLower, relation);
@@ -91,10 +93,13 @@ function Integrate() {
       throw error;
     }
   };
-
   
   useEffect(() => {
     const getFinalResult = async () => {
+      const hello = 
+      inputText.toLocaleLowerCase().includes('hello') || 
+      inputText.toLocaleLowerCase().includes('hi');
+  
       const isQueryWhatWhereWhich =
       inputText.toLowerCase().includes('what') ||
       inputText.toLowerCase().includes('where') ||
@@ -106,6 +111,9 @@ function Integrate() {
       inputText.toLowerCase().includes('ha nam') ||
       inputText.toLowerCase().includes('ha tinh') ||
       inputText.toLowerCase().includes('ha noi');
+
+      const about = 
+      inputText.toLowerCase().includes('introduce yourself');
   
       const finalResult = [];
       const uniqueRelations = new Set();
@@ -131,7 +139,12 @@ function Integrate() {
           finalResult.push(triple);
         }
       }
-  
+      if (hello) {
+        isConditionMet = 5
+      }
+      if (about) {
+        isConditionMet = 6
+      }
       if (isQueryWhatWhereWhich) {
         isConditionMet = 1;
         const relationEntities = nerEntities.filter((entity) => entity.label === 'RELATIONSHIP');
@@ -174,8 +187,6 @@ function Integrate() {
           } else {
             console.log("Can't detect any relation");
           }
-      } else if (!inputText) {
-        return { finalResult: [], isConditionMet: 0, initialObject: '' };
       } else {
         await Promise.all(
           openieTriples.map(async (triple) => {
@@ -222,17 +233,17 @@ function Integrate() {
             );
           })
         );
-      }    
-      return { finalResult, isConditionMet, initialObject }; 
+      }
+      return { finalResult, isConditionMet, initialObject };
     };
-    
+
     const fetchData = async () => {
       if (nerEntities.length > 0) {
         try {
           const { finalResult, isConditionMet, initialObject } = await getFinalResult();
           setIsConditionMet(isConditionMet);
           setInitialObject(initialObject);
-          setFinalResult(finalResult);
+          setFinalResult(finalResult)
           fetchNeo4jDataForFinalResult(finalResult);
         } catch (error) {
           console.error('Error fetching final result:', error);
