@@ -123,6 +123,7 @@ function Integrate() {
       const temporalCheck = nerEntities.filter((entity) => entity.label === 'TEMPORAL');
       const foodEntity = nerEntities.find((entity) => entity.label === 'FOOD');
   
+      //Temporal question
       if (temporalCheck.length > 0) {
         isConditionMet = 4;
         const subject = foodEntity ? foodEntity.text : '';
@@ -139,55 +140,101 @@ function Integrate() {
           finalResult.push(triple);
         }
       }
+      //Normal question without relationship
+      if (!nerEntities.some(entity => entity.label === 'RELATIONSHIP') && temporalCheck.length === 0){
+        const nerLocationEntity = nerEntities.find((entity) => entity.label === 'LOCATION');
+        initialObject = nerLocationEntity.text;
+        const triple = {
+          subject: (nerEntities.find((entity) => entity.label === 'FOOD') || {}).text?.toLowerCase() || '',
+          relation: 'food in',
+          object: (nerEntities.find((entity) => entity.label === 'LOCATION') || {}).text?.toLowerCase() || '',
+        }
+        let data = await fetchDataFromNeo4jForTriple(triple);
+        if (isNeo4jDataEmpty(data)) {
+          isConditionMet = 3;
+          triple.object = '';
+          const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
+          if (!uniqueRelations.has(relationKey)) {
+            uniqueRelations.add(relationKey);
+            finalResult.push(triple);
+          }
+        } else {
+          isConditionMet = 2;
+          const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
+          if (!uniqueRelations.has(relationKey)) {
+            uniqueRelations.add(relationKey);
+            finalResult.push(triple);
+          }
+        }
+      }
       if (hello) {
         isConditionMet = 5
       }
       if (about) {
         isConditionMet = 6
       }
+      //What, where, which question
       if (isQueryWhatWhereWhich) {
-        isConditionMet = 1;
-        const relationEntities = nerEntities.filter((entity) => entity.label === 'RELATIONSHIP');
-        const foodEntity = nerEntities.find((entity) => entity.label === 'FOOD');
-        const locationEntity = nerEntities.find((entity) => entity.label === 'LOCATION');
-  
-        if (relationEntities.length > 0) {
-          relationEntities.forEach( async (relationEntity) => {
-            if ((foodEntity && relationEntity) || (locationEntity && relationEntity)) {
-              const subject = foodEntity ? foodEntity.text : ''
-              const object = locationEntity ? locationEntity.text : ''
+        if (inputText.toLowerCase().includes('history')) {
+          isConditionMet = 4;
+          const subject = foodEntity ? foodEntity.text : '';
+              const object = '';
               const triple = {
                 subject,
-                relation: relationEntity.text,
+                relation: 'food in',
                 object,
               };
+    
+          const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
+          if (!uniqueRelations.has(relationKey)) {
+            uniqueRelations.add(relationKey);
+            finalResult.push(triple);
+          }
+        } else {
+          isConditionMet = 1;
+          const relationEntities = nerEntities.filter((entity) => entity.label === 'RELATIONSHIP');
+          const foodEntity = nerEntities.find((entity) => entity.label === 'FOOD');
+          const locationEntity = nerEntities.find((entity) => entity.label === 'LOCATION');
+    
+          if (relationEntities.length > 0) {
+            relationEntities.forEach( async (relationEntity) => {
+              if ((foodEntity && relationEntity) || (locationEntity && relationEntity)) {
+                const subject = foodEntity ? foodEntity.text : ''
+                const object = locationEntity ? locationEntity.text : ''
+                const triple = {
+                  subject,
+                  relation: relationEntity.text,
+                  object,
+                };
+                const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
+                if (!uniqueRelations.has(relationKey)) {
+                  uniqueRelations.add(relationKey);
+                  finalResult.push(triple);
+                }
+              } else {
+                console.log("Can't detect any relation");
+              }
+            });
+          } else if (foodEntity || locationEntity) {
+              const subject = foodEntity ? foodEntity.text : '';
+              const object = locationEntity ? locationEntity.text : '';
+              const triple = {
+                subject,
+                relation: 'food in',
+                object,
+              };
+    
               const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
               if (!uniqueRelations.has(relationKey)) {
                 uniqueRelations.add(relationKey);
                 finalResult.push(triple);
               }
-            } else {
-              console.log("Can't detect any relation");
-            }
-          });
-        } else if (foodEntity || locationEntity) {
-            const subject = foodEntity ? foodEntity.text : '';
-            const object = locationEntity ? locationEntity.text : '';
-            const triple = {
-              subject,
-              relation: 'food in',
-              object,
-            };
-  
-            const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
-            if (!uniqueRelations.has(relationKey)) {
-              uniqueRelations.add(relationKey);
-              finalResult.push(triple);
-            }
           } else {
             console.log("Can't detect any relation");
           }
-      } else {
+        }
+      //Affirmation question (full triple)
+      } else if(temporalCheck.length === 0) {
         await Promise.all(
           openieTriples.map(async (triple) => {
             const nerLocationEntity = nerEntities.find((entity) => entity.label === 'LOCATION');
