@@ -126,7 +126,11 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject }) => {
               className="clickable-image"
             />
           )}
-          {source && <p>Source: <a href={source} target="_blank" rel="noopener noreferrer">{source}</a></p>}
+          {source && (
+            <p>
+              Source: <a href={source} target="_blank" rel="noopener noreferrer">Click here</a>
+            </p>
+          )}
         </div>
       )}
       <Modal
