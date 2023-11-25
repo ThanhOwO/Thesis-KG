@@ -142,7 +142,7 @@ function Integrate() {
       }
       //Normal question without relationship
       if (!nerEntities.some(entity => entity.label === 'RELATIONSHIP') && temporalCheck.length === 0){
-        const nerLocationEntity = nerEntities.find((entity) => entity.label === 'LOCATION');
+        const nerLocationEntity = (nerEntities.find((entity) => entity.label === 'LOCATION') || {}).text?.toLowerCase() || '';
         initialObject = nerLocationEntity.text;
         const triple = {
           subject: (nerEntities.find((entity) => entity.label === 'FOOD') || {}).text?.toLowerCase() || '',
