@@ -191,11 +191,15 @@ function Integrate() {
             finalResult.push(triple);
           }
         } else {
-          isConditionMet = 1;
+          if (inputText.toLowerCase().includes('region')) {
+            isConditionMet = 8;
+          } else {
+            isConditionMet = 1;
+          }
           const relationEntities = nerEntities.filter((entity) => entity.label === 'RELATIONSHIP');
           const foodEntity = nerEntities.find((entity) => entity.label === 'FOOD');
           const locationEntity = nerEntities.find((entity) => entity.label === 'LOCATION');
-    
+          
           if (relationEntities.length > 0) {
             relationEntities.forEach( async (relationEntity) => {
               if ((foodEntity && relationEntity) || (locationEntity && relationEntity)) {
@@ -203,7 +207,7 @@ function Integrate() {
                 const object = locationEntity ? locationEntity.text : ''
                 const triple = {
                   subject,
-                  relation: relationEntity.text,
+                  relation: 'specialty in',
                   object,
                 };
                 const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
@@ -253,28 +257,62 @@ function Integrate() {
             }
             await Promise.all(
               nerEntities.map(async (entity) => {
-                const newTriple = {
-                  subject: (nerEntities.find((entity) => entity.label === 'FOOD') || {}).text?.toLowerCase() || '',
-                  relation: (nerEntities.find((entity) => entity.label === 'RELATIONSHIP') || {}).text?.toLowerCase() || '',
-                  object: (nerEntities.find((entity) => entity.label === 'LOCATION') || {}).text?.toLowerCase() || '',
-                };
-    
-                let data = await fetchDataFromNeo4jForTriple(newTriple);
-                if (isNeo4jDataEmpty(data)) {
-                  isConditionMet = 3;
-                  newTriple.object = '';
-                  const relationKey = `${newTriple.subject}-${newTriple.relation}-${newTriple.object}`;
-                  if (!uniqueRelations.has(relationKey)) {
-                    uniqueRelations.add(relationKey);
-                    finalResult.push(newTriple);
+                const countFood = nerEntities.filter((entity) => entity.label === 'FOOD');
+                const countLocation = nerEntities.filter((entity) => entity.label === 'LOCATION');         
+                if (countFood.length && countLocation.length === 1) {
+                  console.log("First")
+                  const newTriple = {
+                    subject: (nerEntities.find((entity) => entity.label === 'FOOD') || {}).text?.toLowerCase() || '',
+                    relation: (nerEntities.find((entity) => entity.label === 'RELATIONSHIP') || {}).text?.toLowerCase() || '',
+                    object: (nerEntities.find((entity) => entity.label === 'LOCATION') || {}).text?.toLowerCase() || '',
+                  };
+      
+                  let data = await fetchDataFromNeo4jForTriple(newTriple);
+                  if (isNeo4jDataEmpty(data)) {
+                    isConditionMet = 3;
+                    newTriple.object = '';
+                    const relationKey = `${newTriple.subject}-${newTriple.relation}-${newTriple.object}`;
+                    if (!uniqueRelations.has(relationKey)) {
+                      uniqueRelations.add(relationKey);
+                      finalResult.push(newTriple);
+                    }
+                  } else {
+                    isConditionMet = 2;
+                    const relationKey = `${newTriple.subject}-${newTriple.relation}-${newTriple.object}`;
+                    if (!uniqueRelations.has(relationKey)) {
+                      uniqueRelations.add(relationKey);
+                      finalResult.push(newTriple);
+                    }
                   }
-                } else {
-                  isConditionMet = 2;
-                  const relationKey = `${newTriple.subject}-${newTriple.relation}-${newTriple.object}`;
-                  if (!uniqueRelations.has(relationKey)) {
-                    uniqueRelations.add(relationKey);
-                    finalResult.push(newTriple);
+                } else if (countFood.length >= 2 && countLocation.length === 1) {
+                  isConditionMet = 7;
+                  console.log("Food > 2 detected")
+                  const foodItems = nerEntities
+                    .filter((entity) => entity.label === 'FOOD')
+                    .map((foodEntity) => foodEntity.text.toLowerCase());
+
+                  const availableFood = [];
+                  const unavailableFood = [];
+
+                  for (const foodItem of foodItems) {
+                    const newTriple = {
+                      subject: foodItem,
+                      relation: (nerEntities.find((entity) => entity.label === 'RELATIONSHIP') || {}).text?.toLowerCase() || '',
+                      object: (nerEntities.find((entity) => entity.label === 'LOCATION') || {}).text?.toLowerCase() || '',
+                    };
+                
+                    let data = await fetchDataFromNeo4jForTriple(newTriple);
+                    if (isNeo4jDataEmpty(data)) {
+                      unavailableFood.push(foodItem);
+                    } else {
+                      availableFood.push(foodItem);
+                    }
                   }
+
+                  console.log("Available Food:", availableFood);
+                  console.log("Unavailable Food:", unavailableFood);
+                } else if (countFood.length === 1 && countLocation.length >= 2) {
+                  console.log("Location > 2 detected")
                 }
               })
             );

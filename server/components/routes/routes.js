@@ -128,8 +128,10 @@ router.get('/neo4j', async (req, res) => {
             location.locationName AS locationName,
             location.country AS locationCountry,
             region.regionDetail AS regionDetail,
-            region.regionName AS regionName
-          LIMIT 10
+            region.regionName AS regionName,
+            region.engDetail AS engDetail,
+            region.engName AS engName
+          LIMIT 20
         `;
         defaultRelation = relation.toUpperCase();
       } else {
@@ -149,9 +151,11 @@ router.get('/neo4j', async (req, res) => {
             location.locationName AS locationName,
             location.country AS locationCountry,
             region.regionDetail AS regionDetail,
-            region.regionName AS regionName
+            region.regionName AS regionName,
+            region.engDetail AS engDetail,
+            region.engName AS engName
           ORDER BY random
-          LIMIT 10
+          LIMIT 20
         `;
         defaultRelation = relation.toUpperCase();
       } else {
@@ -171,9 +175,11 @@ router.get('/neo4j', async (req, res) => {
             location.locationName AS locationName,
             location.country AS locationCountry,
             region.regionDetail AS regionDetail,
-            region.regionName AS regionName
+            region.regionName AS regionName,
+            region.engDetail AS engDetail,
+            region.engName AS engName,
           ORDER BY rand()
-          LIMIT 10
+          LIMIT 20
         `;
         defaultRelation = relation.toUpperCase();
       } else {
@@ -203,7 +209,9 @@ router.get('/neo4j', async (req, res) => {
         name: record.get('locationName'),
         country: record.get('locationCountry'),
         region_detail: record.get('regionDetail'),
-        region_name: record.get('regionName')
+        region_name: record.get('regionName'),
+        region_eng_detail: record.get('engDetail'),
+        region_eng_name: record.get('engName')
       }
     }));
 

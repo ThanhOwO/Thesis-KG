@@ -7,7 +7,7 @@ const { Title } = Typography;
 const Neo4jResults = ({ neo4jData, loading }) => {
   return (
     <div className="neo4j-container" >
-      <Title level={4}>Neo4j Result:</Title>
+      <Title level={4}>Neo4j Results:</Title>
       {loading ? <Spin className="loading-indicator" style={{ margin: '10px' }} /> : null}
       <div style={{ maxHeight: '400px', overflowY: 'auto', marginBottom: '50px' }}>
         {Array.isArray(neo4jData) && neo4jData.length > 0 ? (
@@ -28,6 +28,8 @@ const Neo4jResults = ({ neo4jData, loading }) => {
                   <p><strong>Country:</strong> {data?.object ? JSON.stringify(data?.object.country) : 'N/A'}</p>
                   <p><strong>Region detail:</strong> {data?.object ? JSON.stringify(data?.object.region_detail) : 'N/A'}</p>
                   <p><strong>Region name:</strong> {data?.object ? JSON.stringify(data?.object.region_name) : 'N/A'}</p>
+                  <p><strong>Region detail(ENG):</strong> {data?.object ? JSON.stringify(data?.object.region_eng_detail) : 'N/A'}</p>
+                  <p><strong>Region name(ENG):</strong> {data?.object ? JSON.stringify(data?.object.region_eng_name) : 'N/A'}</p>
                 </div>
               </List.Item>
             )}

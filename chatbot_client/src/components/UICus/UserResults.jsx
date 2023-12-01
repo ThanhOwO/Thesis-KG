@@ -37,7 +37,7 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject }) => {
         const possibleResponses = relation === 'SPECIALTY_IN' ? [
           `No, ${subject.name} is not a ${initialObject}'s specialty. ${subject.name} is a traditional and popular dish in Vietnamese cuisine.`,
         ] : [
-          `If we talk about dishes like ${subject.name}, it is not only available in ${initialObject}, it can be easily found in many other provines such as: ${objectNames},...`,
+          `If we talk about dishes like ${subject.name}, it is not only available in ${initialObject}, it can be easily found in many other provines such as: ${objectNames}.`,
         ];
 
         const randomIndex = Math.floor(Math.random() * possibleResponses.length);
@@ -52,9 +52,9 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject }) => {
           // All subjects are the same, create a response
           const subjectName = uniqueSubjectNames[0];
           const possibleResponses = [
-            `${subjectName} is a popular dish in various locations. It's beloved for its unique taste. Some of the best places to eat ${subjectName} in Vietnam include: ${objectNames},...`,
-            `Known for its deliciousness, ${subjectName} is enjoyed in various places such as: ${objectNames},...`,
-            `${subjectName} is a popular dish in Vietnamese cuisine. Some of the best places to eat ${subjectName} in Vietnam include: ${objectNames},...`,
+            `${subjectName} is a popular dish in various locations. It's beloved for its unique taste. Some of the best places to eat ${subjectName} in Vietnam include: ${objectNames}.`,
+            `Known for its deliciousness, ${subjectName} is enjoyed in various places such as: ${objectNames}.`,
+            `${subjectName} is a popular dish in Vietnamese cuisine. Some of the best places to eat ${subjectName} in Vietnam include: ${objectNames}.`,
           ];
           const randomIndex = Math.floor(Math.random() * possibleResponses.length);
           responseText = possibleResponses[randomIndex];
@@ -62,8 +62,8 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject }) => {
           // All objects are the same, create a response
           const objectName = uniqueObjectNames[0];
           const possibleResponses = [
-            `When it comes to ${objectName}, there are many delicious dishes here such as: ${subjectNames},... Loved in many different places.`,
-            `There are many delicious dishes to try in ${objectName}. However, some of the most renowned and beloved dishes in ${objectName} include: ${subjectNames},...`
+            `When it comes to ${objectName}, there are many delicious dishes here such as: ${subjectNames}. Loved in many different places.`,
+            `There are many delicious dishes to try in ${objectName}. However, some of the most renowned and beloved dishes in ${objectName} include: ${subjectNames}.`
           ];
           const randomIndex = Math.floor(Math.random() * possibleResponses.length);
           responseText = possibleResponses[randomIndex];
@@ -83,6 +83,13 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject }) => {
       } else if (isConditionMet === 6) {
         const possibleResponses = [
           `I'm your go-to guide for exploring the rich tapestry of Vietnamese cuisine. Ask me anything about the history, locations, and fascinating details of dishes across all 63 provinces in Vietnam, and let's embark on a culinary journey together!`,
+        ];
+        const randomIndex = Math.floor(Math.random() * possibleResponses.length);
+        responseText = possibleResponses[randomIndex];
+      } else if (isConditionMet === 8 && neo4jData && neo4jData.length > 0) {
+        const { subject, object } = neo4jData[0];
+        const possibleResponses = [
+          `${subject.name} is a specialty of ${object.region_eng_name}. While it has become popular throughout Vietnam and internationally, its roots are in the ${object.region_eng_name}.`,
         ];
         const randomIndex = Math.floor(Math.random() * possibleResponses.length);
         responseText = possibleResponses[randomIndex];
