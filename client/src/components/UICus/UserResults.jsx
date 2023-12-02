@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Spin, Typography, Modal } from 'antd';
 import './styles.scss';
 import RelevantResult from './RelevantResult';
+import axios from 'axios';
 
 const { Title } = Typography;
 
@@ -15,7 +16,7 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject }) => {
   let source = null;
 
   useEffect(() => {
-    const calculateResponseText = () => {
+    const calculateResponseText = async () => {
       let responseText = '';
 
       if (isConditionMet === 2 && neo4jData && neo4jData.length > 0) {
@@ -72,8 +73,19 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject }) => {
         }
       } else if (isConditionMet === 4 && neo4jData && neo4jData.length > 0) {
         const { subject } = neo4jData[0];
-        const possibleResponses = subject.temporal
-        responseText = possibleResponses;
+        try {
+          const response = await axios.post(
+            'http://localhost:8080/translate',
+            {
+              text: subject.temporal
+            }
+          );
+          const translatedText = response.data.translatedText;
+          responseText = translatedText;
+        } catch (error) {
+          console.error('Translation error:', error);
+          responseText = 'An error occurred during translation.';
+        }
       } else if (isConditionMet === 5) {
         const possibleResponses = [
           `Hello there! 👋 How can I assist you today?`,
