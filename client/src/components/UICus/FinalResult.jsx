@@ -7,7 +7,7 @@ const { Title } = Typography;
 const FinalResult = ({ finalResult, loading }) => {
   return (
     <div className="final-result">
-      <Title level={4}>Final Result:</Title>
+      <Title level={4}>Final Results:</Title>
       {loading ? <Spin className="loading-indicator" style={{ margin: '10px' }} /> : null}
       <List
         dataSource={finalResult}

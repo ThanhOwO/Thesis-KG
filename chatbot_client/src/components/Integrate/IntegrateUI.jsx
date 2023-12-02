@@ -5,7 +5,7 @@ import { Button } from 'antd';
 import useNeo4j from '../hooks/useNeo4j';
 import UserResults from '../UICus/UserResults';
 import { ClearOutlined } from '@ant-design/icons'
-import { gptlogo, saved, rocket, userIcon, gptImgLogo, sendBtn, msgIcon, home, whiteSend } from '../../assets';
+import { food1, food2, food3, food4, food5, userIcon, sendBtn, msgIcon, whiteSend, ToVlogo, ToVlogo2, ToVbg } from '../../assets';
 
 
 function IntegrateUI() {
@@ -22,6 +22,9 @@ function IntegrateUI() {
   const [isConditionMet, setIsConditionMet] = useState(0)
   const [initialObject, setInitialObject] = useState('')
   const msgEnd = useRef(null)
+  const images = [food1, food2, food3, food4, food5];
+  const [currentImage, setCurrentImage] = useState(0);
+  const [selectedQuery, setSelectedQuery] = useState('');
   const handleEnter = async (e) => {
     if (e.key == 'Enter' && !loading && userInput.trim() !== '') await handleSend()
   }
@@ -98,7 +101,7 @@ function IntegrateUI() {
       inputText.toLowerCase().includes('ha noi');
 
       const about = 
-      inputText.toLowerCase().includes('introduce yourself');
+      inputText.toLowerCase().includes('introduce yourself')
   
       const finalResult = [];
       const uniqueRelations = new Set();
@@ -176,7 +179,11 @@ function IntegrateUI() {
             finalResult.push(triple);
           }
         } else {
-          isConditionMet = 1;
+          if (inputText.toLowerCase().includes('region')) {
+            isConditionMet = 8;
+          } else {
+            isConditionMet = 1;
+          }
           const relationEntities = nerEntities.filter((entity) => entity.label === 'RELATIONSHIP');
           const foodEntity = nerEntities.find((entity) => entity.label === 'FOOD');
           const locationEntity = nerEntities.find((entity) => entity.label === 'LOCATION');
@@ -188,7 +195,7 @@ function IntegrateUI() {
                 const object = locationEntity ? locationEntity.text : ''
                 const triple = {
                   subject,
-                  relation: relationEntity.text,
+                  relation: 'specialty in',
                   object,
                 };
                 const relationKey = `${triple.subject}-${triple.relation}-${triple.object}`;
@@ -238,28 +245,62 @@ function IntegrateUI() {
             }
             await Promise.all(
               nerEntities.map(async (entity) => {
-                const newTriple = {
-                  subject: (nerEntities.find((entity) => entity.label === 'FOOD') || {}).text?.toLowerCase() || '',
-                  relation: (nerEntities.find((entity) => entity.label === 'RELATIONSHIP') || {}).text?.toLowerCase() || '',
-                  object: (nerEntities.find((entity) => entity.label === 'LOCATION') || {}).text?.toLowerCase() || '',
-                };
-    
-                let data = await fetchDataFromNeo4jForTriple(newTriple);
-                if (isNeo4jDataEmpty(data)) {
-                  isConditionMet = 3;
-                  newTriple.object = '';
-                  const relationKey = `${newTriple.subject}-${newTriple.relation}-${newTriple.object}`;
-                  if (!uniqueRelations.has(relationKey)) {
-                    uniqueRelations.add(relationKey);
-                    finalResult.push(newTriple);
+                const countFood = nerEntities.filter((entity) => entity.label === 'FOOD');
+                const countLocation = nerEntities.filter((entity) => entity.label === 'LOCATION');         
+                if (countFood.length && countLocation.length === 1) {
+                  console.log("First")
+                  const newTriple = {
+                    subject: (nerEntities.find((entity) => entity.label === 'FOOD') || {}).text?.toLowerCase() || '',
+                    relation: (nerEntities.find((entity) => entity.label === 'RELATIONSHIP') || {}).text?.toLowerCase() || '',
+                    object: (nerEntities.find((entity) => entity.label === 'LOCATION') || {}).text?.toLowerCase() || '',
+                  };
+      
+                  let data = await fetchDataFromNeo4jForTriple(newTriple);
+                  if (isNeo4jDataEmpty(data)) {
+                    isConditionMet = 3;
+                    newTriple.object = '';
+                    const relationKey = `${newTriple.subject}-${newTriple.relation}-${newTriple.object}`;
+                    if (!uniqueRelations.has(relationKey)) {
+                      uniqueRelations.add(relationKey);
+                      finalResult.push(newTriple);
+                    }
+                  } else {
+                    isConditionMet = 2;
+                    const relationKey = `${newTriple.subject}-${newTriple.relation}-${newTriple.object}`;
+                    if (!uniqueRelations.has(relationKey)) {
+                      uniqueRelations.add(relationKey);
+                      finalResult.push(newTriple);
+                    }
                   }
-                } else {
-                  isConditionMet = 2;
-                  const relationKey = `${newTriple.subject}-${newTriple.relation}-${newTriple.object}`;
-                  if (!uniqueRelations.has(relationKey)) {
-                    uniqueRelations.add(relationKey);
-                    finalResult.push(newTriple);
+                } else if (countFood.length >= 2 && countLocation.length === 1) {
+                  isConditionMet = 7;
+                  console.log("Food > 2 detected")
+                  const foodItems = nerEntities
+                    .filter((entity) => entity.label === 'FOOD')
+                    .map((foodEntity) => foodEntity.text.toLowerCase());
+
+                  const availableFood = [];
+                  const unavailableFood = [];
+
+                  for (const foodItem of foodItems) {
+                    const newTriple = {
+                      subject: foodItem,
+                      relation: (nerEntities.find((entity) => entity.label === 'RELATIONSHIP') || {}).text?.toLowerCase() || '',
+                      object: (nerEntities.find((entity) => entity.label === 'LOCATION') || {}).text?.toLowerCase() || '',
+                    };
+                
+                    let data = await fetchDataFromNeo4jForTriple(newTriple);
+                    if (isNeo4jDataEmpty(data)) {
+                      unavailableFood.push(foodItem);
+                    } else {
+                      availableFood.push(foodItem);
+                    }
                   }
+
+                  console.log("Available Food:", availableFood);
+                  console.log("Unavailable Food:", unavailableFood);
+                } else if (countFood.length === 1 && countLocation.length >= 2) {
+                  console.log("Location > 2 detected")
                 }
               })
             );
@@ -350,40 +391,79 @@ function IntegrateUI() {
     msgEnd.current.scrollIntoView();
   }, [message])
 
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setCurrentImage((prevIndex) => (prevIndex + 1) % images.length);
+    }, 5000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [images]);
+
+  const handleQueryClick = (query) => {
+    setUserInput(query);
+    setSelectedQuery(query);
+  };
   return (
     <div className='App'>
       <div className='sideBar'>
           <div className='upperSide'>
-            <div className='upperSideTop'><img src={gptlogo} alt='Logo' className='logo'/><span className='brand'>My Chatbot</span></div>
+            <div className='upperSideTop'><img src={ToVlogo2} alt='Logo' className='logo'/><span className='brand'>ToV Bot</span></div>
             <button className='midBtn' onClick={()=>{window.location.reload()}}><ClearOutlined className='addBtn'/> Clear Chat</button>
             <div className='upperSideBottom'>
-              <button className='query'><img src={msgIcon} alt='Query'/>Introduce yourself.</button>
-              <button className='query'><img src={msgIcon} alt='Query'/>Where can I find pho ?</button>
+              <p>Some example question:</p>
+              <Button className='query' onClick={() => handleQueryClick('Introduce yourself.')}>
+                <img src={msgIcon} alt='Query' />
+                Introduce yourself.
+              </Button>
+              <Button className='query' onClick={() => handleQueryClick('Where can I find pho?')}>
+                <img src={msgIcon} alt='Query' />
+                Where can I find pho?
+              </Button>
+              <Button className='query' onClick={() => handleQueryClick('When did pho originate?')}>
+                <img src={msgIcon} alt='Query' />
+                When did pho originate?
+              </Button>
+              <Button className='query' onClick={() => handleQueryClick('Is pho a dish in Nam Dinh?')}>
+                <img src={msgIcon} alt='Query' />
+                Is pho a dish in Nam Dinh ?
+              </Button>
             </div>
           </div>
           <div className='lowerSide'>
-            <div className='listItems'><img src={home} alt='' className='listItemsImg'/>Home</div>
-            <div className='listItems'><img src={saved} alt='' className='listItemsImg'/>Save</div>
-            <div className='listItems'><img src={rocket} alt='' className='listItemsImg'/>Upgrade to Pro</div>
+            <div className='slideshow-container'>
+              {images.map((image, index) => (
+                <img
+                  key={index}
+                  src={image}
+                  alt={`Food Image ${index}`}
+                  className={`slide ${index === currentImage ? 'active' : ''}`}
+                  style={{ transform: `translateX(${-100 * currentImage}%)` }}
+                />
+              ))}
+            </div>
           </div>
       </div>
       <div className='main'>
       <div className='chats'>
         {inputText.length === 0 && (
           <div className='titleBackground'>
-            <h2>My Chatbot</h2>
+            <img className='logobg' src={ToVbg}/>
+            <h2>ToV Bot</h2>
+            <h3>Support and response for Vietnamese cuisine</h3>
           </div>
         )}
         {message.map((chat, index) => (
           <div key={index}>
             {chat.type === 'user' ? (
               <div className='chat'>
-                <img className='chatImg' src={chat.type === 'user' ? userIcon : gptImgLogo} alt='' />
+                <img className='chatImg1' src={chat.type === 'user' ? userIcon : ToVlogo} alt='' />
                 {chat.message}
               </div>
               ) : (
                 <div className='chat bot'>
-                  <img className='chatImg' src={chat.type === 'bot' ? gptImgLogo : userIcon} alt='' />
+                  <img className='chatImg2' src={chat.type === 'bot' ? ToVlogo : userIcon} alt='' />
                     <UserResults
                       neo4jData={chat.message.neo4jData}
                       isConditionMet={chat.message.isConditionMet}
@@ -423,7 +503,7 @@ function IntegrateUI() {
             )}
           </Button>
           </div>
-          <p>My Chatbot can make mistakes. Consider checking important information.</p>
+          <p>ToV Bot can make mistakes. Consider checking important information.</p>
         </div>
       </div>
     </div>
