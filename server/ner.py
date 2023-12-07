@@ -1,10 +1,33 @@
 import sys
 import json
+import re
 from bert import Ner
 
 def main():
         model = Ner("./out_base")
-        text = sys.argv[1]
+        text = sys.argv[1].lower()
+        # List of words to be deleted
+        delete_words = ["did", "is", "am", "are", "was", "were" , 'a']
+
+        # List of words to be replaced
+        replace_words = [","]
+
+        # Check if the first word is 'In'
+        start_delete_words = ["in", "did", "is", "am", "are", "was", "were", 'a']
+
+        # Check if the first word is in the start_delete_words list
+        if text.split(' ', 1)[0] in start_delete_words:
+        # Remove the first word
+            text = text.split(' ', 1)[1]
+
+        # Iterate over the delete_words list and replace each word with an empty string
+        for word in delete_words:
+            text = re.sub(r'\b{}\b'.format(re.escape(word)), '', text)
+
+        # Iterate over the replace_words list and replace each word with ','
+        for word in replace_words:
+            text = text.replace(word, " and")
+
         output = model.predict(text)
         phrases = []
         current_tag = None

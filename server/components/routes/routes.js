@@ -177,8 +177,8 @@ router.get('/neo4j', async (req, res) => {
             region.regionDetail AS regionDetail,
             region.regionName AS regionName,
             region.engDetail AS engDetail,
-            region.engName AS engName,
-          ORDER BY rand()
+            region.engName AS engName
+          ORDER BY random
           LIMIT 20
         `;
         defaultRelation = relation.toUpperCase();
