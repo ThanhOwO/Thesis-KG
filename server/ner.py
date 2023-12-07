@@ -4,7 +4,7 @@ from bert import Ner
 
 def main():
         model = Ner("./out_base")
-        text = sys.argv[1]
+        text = sys.argv[1].lower()
         output = model.predict(text)
         phrases = []
         current_tag = None

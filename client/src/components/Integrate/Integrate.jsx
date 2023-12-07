@@ -20,6 +20,8 @@ function Integrate() {
   const [isConditionMet, setIsConditionMet] = useState(0)
   const [initialObject, setInitialObject] = useState('')
   const [finalResult, setFinalResult] = useState([])
+  const [availableFood, setAvailableFood] = useState([])
+  const [unavailableFood, setUnavailableFood] = useState([])
 
   const handleExtractAndAnalyze = async () => {
     if (inputText.trim() === '') {
@@ -119,6 +121,8 @@ function Integrate() {
       const uniqueRelations = new Set();
       let isConditionMet = 0;
       let initialObject = '';
+      let A2F = [];
+      let U2F = [];
   
       const temporalCheck = nerEntities.filter((entity) => entity.label === 'TEMPORAL');
       const foodEntity = nerEntities.find((entity) => entity.label === 'FOOD');
@@ -142,12 +146,12 @@ function Integrate() {
       }
       //Normal question without relationship
       if (!nerEntities.some(entity => entity.label === 'RELATIONSHIP') && temporalCheck.length === 0){
-        const nerLocationEntity = (nerEntities.find((entity) => entity.label === 'LOCATION') || {}).text?.toLowerCase() || '';
+        const nerLocationEntity = (nerEntities.find((entity) => entity.label === 'LOC') || {}).text?.toLowerCase() || '';
         initialObject = nerLocationEntity.text;
         const triple = {
           subject: (nerEntities.find((entity) => entity.label === 'FOOD') || {}).text?.toLowerCase() || '',
           relation: 'food in',
-          object: (nerEntities.find((entity) => entity.label === 'LOCATION') || {}).text?.toLowerCase() || '',
+          object: (nerEntities.find((entity) => entity.label === 'LOC') || {}).text?.toLowerCase() || '',
         }
         let data = await fetchDataFromNeo4jForTriple(triple);
         if (isNeo4jDataEmpty(data)) {
@@ -198,7 +202,7 @@ function Integrate() {
           }
           const relationEntities = nerEntities.filter((entity) => entity.label === 'RELATIONSHIP');
           const foodEntity = nerEntities.find((entity) => entity.label === 'FOOD');
-          const locationEntity = nerEntities.find((entity) => entity.label === 'LOCATION');
+          const locationEntity = nerEntities.find((entity) => entity.label === 'LOC');
           
           if (relationEntities.length > 0) {
             relationEntities.forEach( async (relationEntity) => {
@@ -241,7 +245,7 @@ function Integrate() {
       } else if(temporalCheck.length === 0) {
         await Promise.all(
           openieTriples.map(async (triple) => {
-            const nerLocationEntity = nerEntities.find((entity) => entity.label === 'LOCATION');
+            const nerLocationEntity = nerEntities.find((entity) => entity.label === 'LOC');
             if (specialLocation) {
               const specialLocations = ['an giang', 'ha giang', 'ha nam', 'ha tinh', 'ha noi'];
               for (const location of specialLocations) {
@@ -258,13 +262,13 @@ function Integrate() {
             await Promise.all(
               nerEntities.map(async (entity) => {
                 const countFood = nerEntities.filter((entity) => entity.label === 'FOOD');
-                const countLocation = nerEntities.filter((entity) => entity.label === 'LOCATION');         
-                if (countFood.length && countLocation.length === 1) {
+                const countLocation = nerEntities.filter((entity) => entity.label === 'LOC');         
+                if (countFood.length === 1 && countLocation.length === 1) {
                   console.log("First")
                   const newTriple = {
                     subject: (nerEntities.find((entity) => entity.label === 'FOOD') || {}).text?.toLowerCase() || '',
                     relation: (nerEntities.find((entity) => entity.label === 'RELATIONSHIP') || {}).text?.toLowerCase() || '',
-                    object: (nerEntities.find((entity) => entity.label === 'LOCATION') || {}).text?.toLowerCase() || '',
+                    object: (nerEntities.find((entity) => entity.label === 'LOC') || {}).text?.toLowerCase() || '',
                   };
       
                   let data = await fetchDataFromNeo4jForTriple(newTriple);
@@ -286,31 +290,32 @@ function Integrate() {
                   }
                 } else if (countFood.length >= 2 && countLocation.length === 1) {
                   isConditionMet = 7;
-                  console.log("Food > 2 detected")
+                  console.log("Food >= 2 detected")
                   const foodItems = nerEntities
                     .filter((entity) => entity.label === 'FOOD')
                     .map((foodEntity) => foodEntity.text.toLowerCase());
 
-                  const availableFood = [];
-                  const unavailableFood = [];
+                  const AF = [];
+                  const UF = [];
 
                   for (const foodItem of foodItems) {
                     const newTriple = {
                       subject: foodItem,
                       relation: (nerEntities.find((entity) => entity.label === 'RELATIONSHIP') || {}).text?.toLowerCase() || '',
-                      object: (nerEntities.find((entity) => entity.label === 'LOCATION') || {}).text?.toLowerCase() || '',
+                      object: (nerEntities.find((entity) => entity.label === 'LOC') || {}).text?.toLowerCase() || '',
                     };
                 
                     let data = await fetchDataFromNeo4jForTriple(newTriple);
                     if (isNeo4jDataEmpty(data)) {
-                      unavailableFood.push(foodItem);
+                      UF.push(foodItem);
                     } else {
-                      availableFood.push(foodItem);
+                      AF.push(foodItem);
                     }
                   }
-
-                  console.log("Available Food:", availableFood);
-                  console.log("Unavailable Food:", unavailableFood);
+                  A2F = AF
+                  U2F = UF
+                  console.log("Available Food:", A2F);
+                  console.log("Unavailable Food:", U2F);
                 } else if (countFood.length === 1 && countLocation.length >= 2) {
                   console.log("Location > 2 detected")
                 }
@@ -319,17 +324,19 @@ function Integrate() {
           })
         );
       }
-      return { finalResult, isConditionMet, initialObject };
+      return { finalResult, isConditionMet, initialObject, A2F, U2F };
     };
 
     const fetchData = async () => {
       if (nerEntities.length > 0) {
         try {
-          const { finalResult, isConditionMet, initialObject } = await getFinalResult();
+          const { finalResult, isConditionMet, initialObject, A2F, U2F } = await getFinalResult();
           setIsConditionMet(isConditionMet);
           setInitialObject(initialObject);
           setFinalResult(finalResult)
           fetchNeo4jDataForFinalResult(finalResult);
+          setAvailableFood(A2F)
+          setUnavailableFood(U2F)
         } catch (error) {
           console.error('Error fetching final result:', error);
         }
@@ -362,7 +369,7 @@ function Integrate() {
   const isNeo4jDataEmpty = (data) => {
     return !data || data.length === 0;
   };  
-
+  
   return (
     <div className="app-container">
       <Title level={2}>Integrating Models</Title>
@@ -384,7 +391,7 @@ function Integrate() {
         neo4jData={neo4jData}
         loading={loading}
       />
-      <UserResults neo4jData={neo4jData} isConditionMet={isConditionMet} loading={loading} initialObject={initialObject}/>
+      <UserResults neo4jData={neo4jData} isConditionMet={isConditionMet} loading={loading} initialObject={initialObject} AF={availableFood} UF={unavailableFood} />
     </div>
   );
 }
