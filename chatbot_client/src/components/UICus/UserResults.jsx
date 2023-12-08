@@ -4,7 +4,7 @@ import './styles.scss';
 import RelevantResult from './RelevantResult';
 import axios from 'axios';
 
-const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF }) => {
+const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF, AL, UL }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalImage, setModalImage] = useState('');
   const [userResponseText, setUserResponseText] = useState('');
@@ -142,6 +142,45 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF
         } else if (AF.length === 0 && UF.length > 0) {
           const possibleResponses = [
             `${UF} are actually Vietnamese dishes that are not specifically associated with ${IO}, but they are popular and enjoyed throughout Vietnam. All dishes are part of the rich and diverse Vietnamese culinary tradition.`,
+          ];
+          const randomIndex = Math.floor(Math.random() * possibleResponses.length);
+          responseText = possibleResponses[randomIndex];
+        }
+      } else if (isConditionMet === 9 && neo4jData && neo4jData.length > 0) {
+        const { subject } = neo4jData[0];
+        if(AL.length === 1 && UL.length === 1) {
+          const possibleResponses = [
+            `Yes, ${subject.name} is a traditional dish in Vietnamese cuisine including ${AL}. But when talking about specialties, ${UL} is not on that list.`,
+          ];
+          const randomIndex = Math.floor(Math.random() * possibleResponses.length);
+          responseText = possibleResponses[randomIndex];
+        } else if (AL.length >= 2 && UL.length === 1) {
+          const possibleResponses = [
+            `Yes, ${subject.name} is a traditional dish in Vietnamese cuisine including ${AL}. But when talking about specialties, ${UL} is not on that list.`,
+          ];
+          const randomIndex = Math.floor(Math.random() * possibleResponses.length);
+          responseText = possibleResponses[randomIndex];
+        } else if (AL.length === 1 && UL.length >= 2) {
+          const possibleResponses = [
+            `Yes, ${subject.name} is a traditional dish in Vietnamese cuisine including ${AL}. But when talking about specialties, ${UL} are not on that list.`,
+          ];
+          const randomIndex = Math.floor(Math.random() * possibleResponses.length);
+          responseText = possibleResponses[randomIndex];
+        } else if (AL.length >= 2 && UL.length >= 2) {
+          const possibleResponses = [
+            `Yes, ${subject.name} is a traditional dish in Vietnamese cuisine including ${AL}. But when talking about specialties, ${UL} are not on that list.`,
+          ];
+          const randomIndex = Math.floor(Math.random() * possibleResponses.length);
+          responseText = possibleResponses[randomIndex];
+        } else if (AL.length > 0 && UL.length === 0) {
+          const possibleResponses = [
+            `${subject.name} is a popular Vietnamese dish that is enjoyed throughout the country, including in ${AL}.`,
+          ];
+          const randomIndex = Math.floor(Math.random() * possibleResponses.length);
+          responseText = possibleResponses[randomIndex];
+        } else if (AL.length === 0 && UL.length > 0) {
+          const possibleResponses = [
+            `${subject.name} is a traditional dish in Vietnamese cuisine. But in ${UL}, ${subject.name} is not a specialty of these provinces.`,
           ];
           const randomIndex = Math.floor(Math.random() * possibleResponses.length);
           responseText = possibleResponses[randomIndex];
