@@ -44,7 +44,8 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF
       } else if (isConditionMet === 3 && neo4jData && neo4jData.length > 0) {
         const { subject, relation } = neo4jData[0];
         const objectNames = neo4jData.map((data) => data.object.name).join(', ');
-        const regionName = neo4jData.map((data) => data.object.region_eng_name);
+        const uniqueRegionNames = Array.from(new Set(neo4jData.map((data) => data.object.region_eng_name)));
+        const regionName = uniqueRegionNames.join(', ');
         const possibleResponses = relation === 'SPECIALTY_IN' ? [
           `No, ${subject.name} is not a ${IO}'s specialty. ${subject.name} is a is a famous dish and specialty of ${objectNames} province in ${regionName}.`,
         ] : [

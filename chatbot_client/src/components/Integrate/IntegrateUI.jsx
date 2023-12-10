@@ -328,9 +328,11 @@ function IntegrateUI() {
                 
                     let data = await fetchDataFromNeo4jForTriple(newTriple);
                     if (isNeo4jDataEmpty(data)) {
-                      UL.push(locItem);
+                      const capitalizedLocItem = locItem.replace(/\b\w/g, (char) => char.toUpperCase());
+                      UL.push(capitalizedLocItem);
                     } else {
-                      AL.push(locItem);
+                      const capitalizedLocItem = locItem.replace(/\b\w/g, (char) => char.toUpperCase());
+                      AL.push(capitalizedLocItem);
                     }
                     const secondTriple = {
                       subject: (nerEntities.find((entity) => entity.label === 'FOOD') || {}).text?.toLowerCase() || '',
