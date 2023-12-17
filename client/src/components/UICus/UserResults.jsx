@@ -47,7 +47,7 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF
         const uniqueRegionNames = Array.from(new Set(neo4jData.map((data) => data.object.region_eng_name)));
         const regionName = uniqueRegionNames.join(', ');
         const possibleResponses = relation === 'SPECIALTY_IN' ? [
-          `No, ${subject.name} is not a ${IO}'s specialty. ${subject.name} is a is a famous dish and specialty of ${objectNames} province in ${regionName}.`,
+          `No, ${subject.name} is not a ${IO}'s specialty. ${subject.name} is a famous dish and specialty of ${objectNames} province in ${regionName}.`,
         ] : [
           `If we talk about dishes like ${subject.name}, it is not only available in ${IO}, it can be easily found in many other provines such as: ${objectNames}.`,
         ];

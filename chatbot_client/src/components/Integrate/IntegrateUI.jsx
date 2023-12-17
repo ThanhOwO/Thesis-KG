@@ -95,13 +95,6 @@ function IntegrateUI() {
       inputText.toLowerCase().includes('what') ||
       inputText.toLowerCase().includes('where') ||
       inputText.toLowerCase().includes('which');
-  
-      const specialLocation = 
-      inputText.toLowerCase().includes('an giang') ||
-      inputText.toLowerCase().includes('ha giang') ||
-      inputText.toLowerCase().includes('ha nam') ||
-      inputText.toLowerCase().includes('ha tinh') ||
-      inputText.toLowerCase().includes('ha noi');
 
       const about = 
       inputText.toLowerCase().includes('introduce yourself')
@@ -234,23 +227,8 @@ function IntegrateUI() {
         }
       //Affirmation question (full triple)
       } else if(temporalCheck.length === 0) {
-        //OpenIE part get initial object
-        await Promise.all(
-          openieTriples.map(async (triple) => {
             const nerLocationEntity = nerEntities.find((entity) => entity.label === 'LOC');
-            if (specialLocation) {
-              const specialLocations = ['an giang', 'ha giang', 'ha nam', 'ha tinh', 'ha noi'];
-              for (const location of specialLocations) {
-                if (inputText.toLowerCase().includes(location)) {
-                  initialObject = location.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-                  break;
-                }
-              }
-            } else if (nerLocationEntity && openieTriples.some((t) => t.object.toLowerCase() === nerLocationEntity.text.toLowerCase())) {
-              initialObject = nerLocationEntity.text;
-            } else {
-              initialObject = triple.object 
-            }
+            initialObject = nerLocationEntity.text;
             //NER part
             await Promise.all(
               nerEntities.map(async (entity) => {
@@ -352,8 +330,6 @@ function IntegrateUI() {
                 }
               })
             );
-          })
-        );
       }
       return { finalResult, isConditionMet, initialObject, A2F, U2F, A2L, U2L };
     };

@@ -10,7 +10,7 @@ const RelevantResult = ({urls, keywords}) => {
   }
 
   if (error) {
-    return <div>Error: {error.message}</div>;
+    return;
   }
 
   return (

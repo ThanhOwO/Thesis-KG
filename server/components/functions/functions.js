@@ -2,9 +2,11 @@ const { spawn, exec } = require('child_process');
 const { vietnameseDiacritics } = require('../libs/libs');
 
 function containsVietnameseDiacritics(text) {
-    for (const diacritic of vietnameseDiacritics) {
-        if (text.includes(diacritic)) {
-            return true;
+    if(text) {
+        for (const diacritic of vietnameseDiacritics) {
+            if (text.includes(diacritic)) {
+                return true;
+            }
         }
     }
     return false;
