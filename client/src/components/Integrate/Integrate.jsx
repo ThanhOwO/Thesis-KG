@@ -11,7 +11,6 @@ const { Title } = Typography;
 
 function Integrate() {
   const [inputText, setInputText] = useState('');
-  const [openieTriples, setOpenIETriples] = useState([]);
   const [nerEntities, setNEREntities] = useState([]);
   const [loading, setLoading] = useState(false);
   const [inputError, setInputError] = useState(false);
@@ -41,15 +40,8 @@ function Integrate() {
         text: inputText,
       });
       let transformedText = translateResponse.data.translatedText;
-      const extractResponse = await axios.post('http://localhost:9000', {
-        annotators: 'openie',
-        outputFormat: 'json',
-        data: transformedText,
-      });
 
-      setOpenIETriples(extractResponse.data.sentences[0]?.openie);
-
-      const nerResponse = await axios.post('http://localhost:8080/ner', { text: inputText });
+      const nerResponse = await axios.post('http://localhost:8080/ner', { text: transformedText  });
       setNEREntities(nerResponse.data);
     } catch (error) {
       console.error('Error:', error);
@@ -387,7 +379,6 @@ function Integrate() {
         </Button>
       </div>
       <Results
-        openieTriples={openieTriples}
         nerEntities={nerEntities}
         finalResult={finalResult}
         neo4jData={neo4jData}

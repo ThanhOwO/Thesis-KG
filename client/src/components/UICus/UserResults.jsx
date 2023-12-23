@@ -233,11 +233,11 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF
               className="clickable-image"
             />
           )}
-          {source && (
+          {/* {source && (
             <p>
               Source: <a href={source} target="_blank" rel="noopener noreferrer">Click here</a>
             </p>
-          )}
+          )} */}
         </div>
       )}
       <Modal
@@ -250,7 +250,7 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF
       >
         {modalImage && <img src={modalImage} alt="${subject.name}" style={{ width: '100%' }} />}
       </Modal>
-      {hasNeo4jData && <RelevantResult urls={neo4jData[0].subject.sources} keywords={neo4jData[0].subject.name} />}
+      {/* {hasNeo4jData && <RelevantResult urls={neo4jData[0].subject.sources} keywords={neo4jData[0].subject.name} />} */}
     </div>
   );
 };

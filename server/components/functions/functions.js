@@ -42,34 +42,57 @@ async function executeNER(inputText) {
     });
 }
 
-async function executeFactCheck(urls, keywords, callback) {
-  const pythonScriptPath = 'factChecking.py';
+// async function executeFactCheck(urls, keywords, callback) {
+//   const pythonScriptPath = 'factChecking.py';
 
-  let urlsString = urls;
-  let keywordsString = keywords;
+//   let urlsString = urls;
+//   let keywordsString = keywords;
 
-  if (Array.isArray(urls)) {
-    urlsString = urls.join(',');
-  }
+//   if (Array.isArray(urls)) {
+//     urlsString = urls.join(',');
+//   }
 
-  if (Array.isArray(keywords)) {
-    keywordsString = keywords.join(',');
-  }
+//   if (Array.isArray(keywords)) {
+//     keywordsString = keywords.join(',');
+//   }
 
-  const command = `python ${pythonScriptPath} ${urlsString} ${keywordsString}`;
+//   const command = `python ${pythonScriptPath} ${urlsString} ${keywordsString}`;
 
-  exec(command, (error, stdout, stderr) => {
-    if (error) {
-      callback(error, null);
-    } else {
-      const extractedInformation = JSON.parse(stdout);
-      callback(null, extractedInformation);
-    }
-  });
+//   exec(command, (error, stdout, stderr) => {
+//     if (error) {
+//       callback(error, null);
+//     } else {
+//       const extractedInformation = JSON.parse(stdout);
+//       callback(null, extractedInformation);
+//     }
+//   });
+// }
+
+async function executeRefCheck(urls, originalKeyword, chatbotRes, callback) {
+    const pythonScriptPath = 'sourceRef.py';
+
+    let urlsString = urls.join(' ');
+    let originalKeywordString = originalKeyword;
+    let chatbotResString = chatbotRes;
+
+    const command = `python ${pythonScriptPath} ${urlsString} ${originalKeywordString} ${chatbotResString}`;
+
+    exec(command, (error, stdout, stderr) => {
+        if (error) {
+            callback(error, null);
+        } else {
+            try {
+                const scriptOutput = JSON.parse(stdout);
+                callback(null, scriptOutput);
+            } catch (jsonError) {
+                callback(jsonError, null);
+            }
+        }
+    });
 }
 
 module.exports = {
     containsVietnameseDiacritics,
     executeNER,
-    executeFactCheck
+    executeRefCheck
 };

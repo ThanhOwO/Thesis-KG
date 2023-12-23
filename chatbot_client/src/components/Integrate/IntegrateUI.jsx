@@ -10,7 +10,6 @@ import { food1, food2, food3, food4, food5, userIcon, sendBtn, msgIcon, whiteSen
 
 function IntegrateUI() {
   const [inputText, setInputText] = useState('');
-  const [openieTriples, setOpenIETriples] = useState([]);
   const [nerEntities, setNEREntities] = useState([]);
   const [loading, setLoading] = useState(false);
   const [inputError, setInputError] = useState(false);
@@ -28,6 +27,7 @@ function IntegrateUI() {
   const [unavailableFood, setUnavailableFood] = useState([])
   const [availableLoc, setAvailableLoc] = useState([])
   const [unavailableLoc, setUnavailableLoc] = useState([])
+  const [transformedText, setTransformedText] = useState('')
   const handleEnter = async (e) => {
     if (e.key == 'Enter' && !loading && userInput.trim() !== '') await handleSend()
   }
@@ -48,15 +48,8 @@ function IntegrateUI() {
         text: inputText,
       });
       let transformedText = translateResponse.data.translatedText;
-      const extractResponse = await axios.post('http://localhost:9000', {
-        annotators: 'openie',
-        outputFormat: 'json',
-        data: transformedText,
-      });
-
-      setOpenIETriples(extractResponse.data.sentences[0]?.openie);
-
-      const nerResponse = await axios.post('http://localhost:8080/ner', { text: inputText });
+      setTransformedText(transformedText)
+      const nerResponse = await axios.post('http://localhost:8080/ner', { text: transformedText });
       setNEREntities(nerResponse.data);
     } catch (error) {
       console.error('Error:', error);
@@ -88,16 +81,16 @@ function IntegrateUI() {
   useEffect(() => {
     const getFinalResult = async () => {
       const hello = 
-      inputText.toLocaleLowerCase().includes('hello') || 
-      inputText.toLocaleLowerCase().includes('hi');
+      transformedText.toLocaleLowerCase().includes('hello') || 
+      transformedText.toLocaleLowerCase().includes('hi');
   
       const isQueryWhatWhereWhich =
-      inputText.toLowerCase().includes('what') ||
-      inputText.toLowerCase().includes('where') ||
-      inputText.toLowerCase().includes('which');
+      transformedText.toLowerCase().includes('what') ||
+      transformedText.toLowerCase().includes('where') ||
+      transformedText.toLowerCase().includes('which');
 
       const about = 
-      inputText.toLowerCase().includes('introduce yourself')
+      transformedText.toLowerCase().includes('introduce yourself')
   
       const finalResult = [];
       const uniqueRelations = new Set();
@@ -163,7 +156,7 @@ function IntegrateUI() {
       }
       //What, where, which question
       if (isQueryWhatWhereWhich) {
-        if (inputText.toLowerCase().includes('history')) {
+        if (transformedText.toLowerCase().includes('history')) {
           isConditionMet = 4;
           const subject = foodEntity ? foodEntity.text : '';
               const object = '';
@@ -179,7 +172,7 @@ function IntegrateUI() {
             finalResult.push(triple);
           }
         } else {
-          if (inputText.toLowerCase().includes('region')) {
+          if (transformedText.toLowerCase().includes('region')) {
             isConditionMet = 8;
           } else {
             isConditionMet = 1;
