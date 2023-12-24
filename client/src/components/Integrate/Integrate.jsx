@@ -11,7 +11,6 @@ const { Title } = Typography;
 
 function Integrate() {
   const [inputText, setInputText] = useState('');
-  const [openieTriples, setOpenIETriples] = useState([]);
   const [nerEntities, setNEREntities] = useState([]);
   const [loading, setLoading] = useState(false);
   const [inputError, setInputError] = useState(false);
@@ -41,18 +40,8 @@ function Integrate() {
         text: inputText,
       });
       let transformedText = translateResponse.data.translatedText;
-      // if (shouldApplyTransformation(translateResponse.data.translatedText)) {
-      //   transformedText = transformInput(translateResponse.data.translatedText);
-      // }
-      const extractResponse = await axios.post('http://localhost:9000', {
-        annotators: 'openie',
-        outputFormat: 'json',
-        data: transformedText,
-      });
 
-      setOpenIETriples(extractResponse.data.sentences[0]?.openie);
-
-      const nerResponse = await axios.post('http://localhost:8080/ner', { text: inputText });
+      const nerResponse = await axios.post('http://localhost:8080/ner', { text: transformedText  });
       setNEREntities(nerResponse.data);
     } catch (error) {
       console.error('Error:', error);
@@ -60,23 +49,6 @@ function Integrate() {
       setLoading(false);
     }
   };
-
-  // const shouldApplyTransformation = (text) => {
-  //   const words = text.split(' ');
-  //   const isIndex = words.indexOf('is');
-  //   return isIndex !== -1 && words.length - isIndex <= 3;
-  // };
-
-  // function transformInput(originalInput) {
-  //   const parts = originalInput.split(' is ');
-  //   if (parts.length !== 2) {
-  //     return originalInput;
-  //   }
-  //   const subject = parts[1].trim();
-  //   const remainder = parts[0].trim();
-  //   const transformedInput = `${subject} is ${remainder}`;
-  //   return transformedInput;
-  // }
 
   const fetchDataFromNeo4jForTriple = async (triple) => {
     const subjectLower = triple.subject ? triple.subject.toLowerCase() : '';
@@ -108,13 +80,6 @@ function Integrate() {
       inputText.toLowerCase().includes('what') ||
       inputText.toLowerCase().includes('where') ||
       inputText.toLowerCase().includes('which');
-  
-      const specialLocation = 
-      inputText.toLowerCase().includes('an giang') ||
-      inputText.toLowerCase().includes('ha giang') ||
-      inputText.toLowerCase().includes('ha nam') ||
-      inputText.toLowerCase().includes('ha tinh') ||
-      inputText.toLowerCase().includes('ha noi');
 
       const about = 
       inputText.toLowerCase().includes('introduce yourself');
@@ -247,23 +212,8 @@ function Integrate() {
         }
       //Affirmation question (full triple)
       } else if(temporalCheck.length === 0) {
-        //OpenIE part get initial object
-        await Promise.all(
-          openieTriples.map(async (triple) => {
             const nerLocationEntity = nerEntities.find((entity) => entity.label === 'LOC');
-            if (specialLocation) {
-              const specialLocations = ['an giang', 'ha giang', 'ha nam', 'ha tinh', 'ha noi'];
-              for (const location of specialLocations) {
-                if (inputText.toLowerCase().includes(location)) {
-                  initialObject = location.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-                  break;
-                }
-              }
-            } else if (nerLocationEntity && openieTriples.some((t) => t.object.toLowerCase() === nerLocationEntity.text.toLowerCase())) {
-              initialObject = nerLocationEntity.text;
-            } else {
-              initialObject = triple.object 
-            }
+            initialObject = nerLocationEntity.text;
             //NER part
             await Promise.all(
               nerEntities.map(async (entity) => {
@@ -365,8 +315,6 @@ function Integrate() {
                 }
               })
             );
-          })
-        );
       }
       return { finalResult, isConditionMet, initialObject, A2F, U2F, A2L, U2L };
     };
@@ -431,7 +379,6 @@ function Integrate() {
         </Button>
       </div>
       <Results
-        openieTriples={openieTriples}
         nerEntities={nerEntities}
         finalResult={finalResult}
         neo4jData={neo4jData}

@@ -1,7 +1,7 @@
 const express = require('express');
 const translate = require('translate-google');
 const neo4j = require('neo4j-driver');
-const { containsVietnameseDiacritics, executeNER, executeFactCheck } = require('../functions/functions');
+const { containsVietnameseDiacritics, executeNER, executeRefCheck } = require('../functions/functions');
 const { removeDiacritics } = require('../libs/libs')
 require('dotenv').config();
 
@@ -117,7 +117,7 @@ router.get('/neo4j', async (req, res) => {
     if (subject && object) {
       if (relation && (relation.toLowerCase() === 'food_in' || relation.toLowerCase() === 'specialty_in' || relation.toLocaleLowerCase() === 'dish_in')) {
         cypherQuery = `
-          MATCH (food:Food)-[:${relation.toUpperCase()}]->(location:Location)-[:IN_REGION]->(region:Region)
+          MATCH (food:Food)-[:${relation.toUpperCase()}]->(location:Location)-[:IN_REGION]->(region:Region), (food)-[:HAS_SOURCE]->(source:Source)
           WHERE (food.vieName = $subject OR food.engName = $subject)
           AND ((location.lowerLocationName = $object) OR (region.lowerRegionDetail = $object) OR (location.noSpace = $object) OR (region.engName = $object))
           RETURN
@@ -130,7 +130,8 @@ router.get('/neo4j', async (req, res) => {
             region.regionDetail AS regionDetail,
             region.regionName AS regionName,
             region.engDetail AS engDetail,
-            region.engName AS engName
+            region.engName AS engName,
+            COLLECT(source.link) AS sourceLink
           LIMIT 20
         `;
         defaultRelation = relation.toUpperCase();
@@ -140,21 +141,19 @@ router.get('/neo4j', async (req, res) => {
     } else if (subject) {
       if (relation && (relation.toLowerCase() === 'food_in' || relation.toLowerCase() === 'specialty_in' || relation.toLocaleLowerCase() === 'dish_in')) {
         cypherQuery = `
-          MATCH (food:Food)-[:${relation.toUpperCase()}]->(location:Location)-[:IN_REGION]->(region:Region)
+          MATCH (food:Food)-[:${relation.toUpperCase()}]->(location:Location)-[:IN_REGION]->(region:Region), (food)-[:HAS_SOURCE]->(source:Source)
           WHERE (food.vieName = $subject OR food.engName = $subject)
-          WITH food, location, region, rand() AS random
           RETURN
             food.foodName AS foodName,
             food.image AS foodImage,
-            food.sources AS foodSource,
             food.temporal AS foodTemporal,
             location.locationName AS locationName,
             location.country AS locationCountry,
             region.regionDetail AS regionDetail,
             region.regionName AS regionName,
             region.engDetail AS engDetail,
-            region.engName AS engName
-          ORDER BY random
+            region.engName AS engName,
+            COLLECT(source.link) AS sourceLink
           LIMIT 20
         `;
         defaultRelation = relation.toUpperCase();
@@ -164,21 +163,19 @@ router.get('/neo4j', async (req, res) => {
     } else if (object) {
       if (relation && (relation.toLowerCase() === 'food_in' || relation.toLowerCase() === 'specialty_in' || relation.toLocaleLowerCase() === 'dish_in')) {
         cypherQuery = `
-          MATCH (food:Food)-[:${relation.toUpperCase()}]->(location:Location)-[:IN_REGION]->(region:Region)
+          MATCH (food:Food)-[:${relation.toUpperCase()}]->(location:Location)-[:IN_REGION]->(region:Region), (food)-[:HAS_SOURCE]->(source:Source)
           WHERE (location.lowerLocationName = $object OR location.noSpace = $object)
-          WITH food, location, region, rand() AS random
           RETURN
             food.foodName AS foodName,
             food.image AS foodImage,
-            food.sources AS foodSource,
             food.temporal AS foodTemporal,
             location.locationName AS locationName,
             location.country AS locationCountry,
             region.regionDetail AS regionDetail,
             region.regionName AS regionName,
             region.engDetail AS engDetail,
-            region.engName AS engName
-          ORDER BY random
+            region.engName AS engName,
+            COLLECT(source.link) AS sourceLink
           LIMIT 20
         `;
         defaultRelation = relation.toUpperCase();
@@ -200,7 +197,7 @@ router.get('/neo4j', async (req, res) => {
         type: 'Food',
         name: record.get('foodName'),
         image: record.get('foodImage'),
-        sources: record.get('foodSource'),
+        sources: record.get('sourceLink'),
         temporal: record.get('foodTemporal')
       },
       relation: defaultRelation,
@@ -225,17 +222,35 @@ router.get('/neo4j', async (req, res) => {
 });
 
 //fact checking source
-router.post('/fact', async (req, res) => {
+// router.post('/fact', async (req, res) => {
+//   try {
+//     const { urls, keywords } = req.body;
+//     if (!urls || !keywords) {
+//       return res.status(400).json({ error: 'Both URLs and keywords are required.' });
+//     }
+//     executeFactCheck(urls, keywords, (error, extractedInformation) => {
+//       if (error) {
+//         return res.status(500).json({ error: `Error extracting information: ${error.message}` });
+//       }
+//       res.json(extractedInformation);
+//     });
+//   } catch (error) {
+//     res.status(500).json({ error: `An internal server error occurred: ${error.message}` });
+//   }
+// });
+
+//source reference checking
+router.post('/ref', async (req, res) => {
   try {
-    const { urls, keywords } = req.body;
-    if (!urls || !keywords) {
-      return res.status(400).json({ error: 'Both URLs and keywords are required.' });
+    const { urls, originalKeyword, chatbotRes } = req.body;
+    if (!urls || !originalKeyword || !chatbotRes) {
+      return res.status(400).json({ error: 'URLs, originalKeyword, and chatbotRes are required.' });
     }
-    executeFactCheck(urls, keywords, (error, extractedInformation) => {
+    executeRefCheck(urls, originalKeyword, chatbotRes, (error, scriptOutput) => {
       if (error) {
-        return res.status(500).json({ error: `Error extracting information: ${error.message}` });
+        return res.status(500).json({ error: `Error executing custom script: ${error.message}` });
       }
-      res.json(extractedInformation);
+      res.json(scriptOutput);
     });
   } catch (error) {
     res.status(500).json({ error: `An internal server error occurred: ${error.message}` });

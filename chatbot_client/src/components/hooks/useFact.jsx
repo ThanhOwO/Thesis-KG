@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const useFact = (urls, keywords) => {
+const useFact = (urls, originalKeyword, chatbotRes) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -9,20 +9,25 @@ const useFact = (urls, keywords) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.post('http://localhost:8080/fact', {
+        const response = await axios.post('http://localhost:8080/ref', {
           urls,
-          keywords,
+          originalKeyword, 
+          chatbotRes,
+        },{
+          headers: {
+            'Content-Type': 'application/json',
+          },
         });
         setData(response.data);
         setLoading(false);
       } catch (error) {
-        setError(error);
+        console.error("Error:", error.response.data);
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [urls, keywords]);
+  }, [urls, originalKeyword, chatbotRes]);
 
   return { data, loading, error };
 };
