@@ -69,26 +69,27 @@ async function executeNER(inputText) {
 // }
 
 async function executeRefCheck(urls, originalKeyword, chatbotRes, callback) {
-    const pythonScriptPath = 'sourceRef.py';
 
-    let urlsString = urls.join(' ');
-    let originalKeywordString = originalKeyword;
-    let chatbotResString = chatbotRes;
+    const urlsString = urls.join(',');
 
-    const command = `python ${pythonScriptPath} ${urlsString} ${originalKeywordString} ${chatbotResString}`;
+    const command = `python sourceRef.py "${urlsString}" "${originalKeyword}" "${chatbotRes}"`;
 
     exec(command, (error, stdout, stderr) => {
         if (error) {
+            console.error(`Error executing custom script: ${error}`);
+            console.error(`stderr: ${stderr}`);
             callback(error, null);
         } else {
             try {
+                console.log(`stdout: ${stdout}`);
                 const scriptOutput = JSON.parse(stdout);
                 callback(null, scriptOutput);
             } catch (jsonError) {
+                console.error(`JSON parsing error: ${jsonError}`);
                 callback(jsonError, null);
             }
         }
-    });
+    });  
 }
 
 module.exports = {

@@ -39,32 +39,37 @@ def extract_words_from_annotation(annotation):
 
 def main():
     try:
-        urls = ["https://vi.wikipedia.org/wiki/Phở",
-                "https://en.wikipedia.org/wiki/Pho",
-                "https://foodelivietnam.com/nguon-goc-cua-pho-pho-bat-nguon-tu-dau.html",
-                "https://vnexpress.net/pho-viet-duoc-vi-nhu-ban-giao-huong-huong-vi-4625542.html",
-                "https://tuoitre.vn/pho-mon-an-khien-ta-phai-nhoc-long-20230926234819187.htm"]
+        urls = sys.argv[1].split(',')
+        original_keyword = sys.argv[2]
+        chatbot_res = sys.argv[3]
         web_contents = []
+        result_annotations = []
 
         try:
             for url in urls:
                 response = requests.get(url)
-                soup = BeautifulSoup(response.text, 'html.parser')
-                paragraphs = [p.get_text() for p in soup.find_all('p')]
-                clean_content = ' '.join(paragraphs)
-                web_contents.append(clean_content)
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.text, 'html.parser')
+                    paragraphs = [p.get_text() for p in soup.find_all('p')]
+                    clean_content = ' '.join(paragraphs)
+                    web_contents.append(clean_content)
+                else:
+                    web_contents.append("error")
+                    logging.error(f"Error fetching content from {url}. Status code: {response.status_code}")
         except Exception as e:
-            web_contents.append("")
+            web_contents.append("error")
             logging.error(f"Error fetching content from {url}: {e}")
 
         # Bước 2: Trích xuất 5 câu chứa từ khóa từ mỗi trang web
-        original_keyword = "Phở"  # Replace with your original keyword
         lowercase_keyword = original_keyword.lower()
-        result_annotations = []
 
         for content in web_contents:
-            sentences = sent_tokenize(content)
-            keyword_sentences = [sentence for sentence in sentences if lowercase_keyword in sentence.lower()][:5]
+            if content == "error":
+                # Thay thế câu trích xuất bị lỗi bằng từ "error"
+                keyword_sentences = ["error"] * 5
+            else:
+                sentences = sent_tokenize(content)
+                keyword_sentences = [sentence for sentence in sentences if lowercase_keyword in sentence.lower()][:5]
 
             # Annotate từng câu
             annotations = []
@@ -75,7 +80,6 @@ def main():
             result_annotations.append(annotations)
 
         # Câu trả lời của chat bot
-        chatbot_res = "Đúng, Phở là món ăn truyền thống của Việt Nam và là đặc sản ở Nam Định."
         ws_chatbot_res_annotation = load_vncorenlp_model().annotate(chatbot_res)
 
         # Trích xuất từ từ kết quả annotate của câu trả lời
@@ -90,7 +94,6 @@ def main():
         # Tính cosine similarity cho từng câu của mỗi trang web
         for i, (url, annotations) in enumerate(zip(urls, result_annotations)):
             web_scores = []
-            print(f"\nWeb {i + 1} ({url}):\n")
             for j, annotation in enumerate(annotations):
                 # Trích xuất từ từ kết quả annotate của câu trang web
                 web_words = extract_words_from_annotation(annotation)
@@ -98,6 +101,8 @@ def main():
                 web_sentence_embedding = get_phobert_embedding(' '.join(web_words[0]))
                 # Tính cosine similarity
                 similarity_score = cosine_similarity([phobert_chatbot_res_embedding], [web_sentence_embedding])[0][0]
+
+                web_scores.append(similarity_score)
 
             # Tính trung bình điểm cho trang web hiện tại
             web_average_score = mean(web_scores)
@@ -113,8 +118,7 @@ def main():
         ranking_info = [{"url": url, "relevant score": score} for url, score in sorted_web_scores]
 
         # Print the result as JSON for API call
-        json_result = json.dumps({"web_ranking": ranking_info}, indent=2)
-        print(json_result)
+        print(json.dumps({"web_ranking": ranking_info}, indent=2))
 
     except Exception as e:
         logging.error(f"Unexpected error: {e}")
