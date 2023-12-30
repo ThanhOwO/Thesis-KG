@@ -132,7 +132,7 @@ router.get('/neo4j', async (req, res) => {
             region.engDetail AS engDetail,
             region.engName AS engName,
             COLLECT(source.link) AS sourceLink
-          LIMIT 20
+          LIMIT 63
         `;
         defaultRelation = relation.toUpperCase();
       } else {
@@ -154,7 +154,7 @@ router.get('/neo4j', async (req, res) => {
             region.engDetail AS engDetail,
             region.engName AS engName,
             COLLECT(source.link) AS sourceLink
-          LIMIT 20
+          LIMIT 63
         `;
         defaultRelation = relation.toUpperCase();
       } else {
@@ -176,7 +176,7 @@ router.get('/neo4j', async (req, res) => {
             region.engDetail AS engDetail,
             region.engName AS engName,
             COLLECT(source.link) AS sourceLink
-          LIMIT 20
+          LIMIT 63
         `;
         defaultRelation = relation.toUpperCase();
       } else {

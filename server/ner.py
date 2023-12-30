@@ -7,8 +7,9 @@ def main():
         model = Ner("./out_base")
         text = sys.argv[1].lower()
         # List of words to be deleted
-        delete_words = ["did", "is", "am", "are", "was", "were" , 'a']
-
+        with open('./stopwords_en.txt', 'r') as file:
+            content = file.read()
+        stopwords = [word.strip() for word in content.split(',')]
         # List of words to be replaced
         replace_words = [","]
 
@@ -21,7 +22,7 @@ def main():
             text = text.split(' ', 1)[1]
 
         # Iterate over the delete_words list and replace each word with an empty string
-        for word in delete_words:
+        for word in stopwords:
             text = re.sub(r'\b{}\b'.format(re.escape(word)), '', text)
 
         # Iterate over the replace_words list and replace each word with ','
