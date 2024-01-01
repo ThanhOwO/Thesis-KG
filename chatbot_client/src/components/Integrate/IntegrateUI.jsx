@@ -6,6 +6,7 @@ import useNeo4j from '../hooks/useNeo4j';
 import UserResults from '../UICus/UserResults';
 import { ClearOutlined } from '@ant-design/icons'
 import { food1, food2, food3, food4, food5, userIcon, sendBtn, msgIcon, whiteSend, ToVlogo, ToVlogo2, ToVbg } from '../../assets';
+import { isVietnamese } from '../libs/libs';
 
 
 function IntegrateUI() {
@@ -28,6 +29,7 @@ function IntegrateUI() {
   const [availableLoc, setAvailableLoc] = useState([])
   const [unavailableLoc, setUnavailableLoc] = useState([])
   const [transformedText, setTransformedText] = useState('')
+  const [langDetect, setLangDetect] = useState('')
   const handleEnter = async (e) => {
     if (e.key == 'Enter' && !loading && userInput.trim() !== '') await handleSend()
   }
@@ -62,11 +64,11 @@ function IntegrateUI() {
     const subjectLower = triple.subject ? triple.subject.toLowerCase() : '';
     const objectLower = triple.object ? triple.object.toLowerCase() : '';
     let relation = '';
-    if (triple.relation.toLowerCase().includes('food in')) {
+    if (triple.relation.toLowerCase().includes('food')) {
       relation = 'food_in';
-    } else if (triple.relation.toLowerCase().includes('specialty in')) {
+    } else if (triple.relation.toLowerCase().includes('specialty')) {
       relation = 'specialty_in';
-    } else if (triple.relation.toLowerCase().includes('dish in')) {
+    } else if (triple.relation.toLowerCase().includes('dish')) {
       relation = 'dish_in';
     }
     try {
@@ -80,6 +82,10 @@ function IntegrateUI() {
 
   useEffect(() => {
     const getFinalResult = async () => {
+
+      const detectedLang = isVietnamese(inputText) ? 'vie' : 'eng';
+      setLangDetect(detectedLang);
+
       const hello = 
       transformedText.toLocaleLowerCase().includes('hello') || 
       transformedText.toLocaleLowerCase().includes('hi');
@@ -100,6 +106,7 @@ function IntegrateUI() {
       let U2F = [];
       let A2L = [];
       let U2L = [];
+      let lang = '';
 
       const temporalCheck = nerEntities.filter((entity) => entity.label === 'TEMPORAL');
       const foodEntity = nerEntities.find((entity) => entity.label === 'FOOD');
@@ -324,7 +331,7 @@ function IntegrateUI() {
               })
             );
       }
-      return { finalResult, isConditionMet, initialObject, A2F, U2F, A2L, U2L };
+      return { finalResult, isConditionMet, initialObject, A2F, U2F, A2L, U2L, lang };
     };
 
     const fetchData = async () => {
@@ -497,6 +504,7 @@ function IntegrateUI() {
                       UF={chat.message.unavailableFood}
                       AL={chat.message.availableLoc}
                       UL={chat.message.unavailableLoc}
+                      lang={langDetect}
                     />
                 </div>
               )}

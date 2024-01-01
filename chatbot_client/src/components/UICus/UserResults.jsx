@@ -4,7 +4,7 @@ import './styles.scss';
 import RelevantResult from './RelevantResult';
 import axios from 'axios';
 
-const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF, AL, UL }) => {
+const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF, AL, UL, lang }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalImage, setModalImage] = useState('');
   const [userResponseText, setUserResponseText] = useState('');
@@ -55,16 +55,22 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF
         const objectNames = neo4jData.map((data) => data.object.name).join(', ');
         const uniqueRegionNames = Array.from(new Set(neo4jData.map((data) => data.object.region_eng_name)));
         const regionName = uniqueRegionNames.join(', ');
+        const uniqueRegionVnNames = Array.from(new Set(neo4jData.map((data) => data.object.region_name)));
+        const vnRegionName = uniqueRegionVnNames.join(', ');
+        const uniqueRegionDetail = Array.from(new Set(neo4jData.map((data) => data.object.region_detail)));
+        const vnRegionDetail = uniqueRegionDetail.join(', ');
+        const uniqueRegionDetailEng = Array.from(new Set(neo4jData.map((data) => data.object.region_eng_detail)));
+        const engRegionDetail = uniqueRegionDetailEng.join(', ');
         const possibleResponses = relation === 'SPECIALTY_IN' ? [
           `No, ${subject.name} is not a ${IO}'s specialty. ${subject.name} is a famous dish and specialty of ${objectNames} province in ${regionName}.`,
         ] : [
-          `If we talk about dishes like ${subject.name}, it is not only available in ${IO}, it can be easily found in many other provinces such as: ${objectNames}.`,
+          `If we talk about dishes like ${subject.name}, it is not only available in ${IO} but also popular in many provinces and cities in region: ${engRegionDetail}.`,
         ];
 
         const refcheck = relation === 'SPECIALTY_IN' ? [
-          `Không, ${subject.name} không phải là đặc sản của ${IO}. ${subject.name} là món ăn, đặc sản nổi tiếng của tỉnh ${objectNames} thuộc miền ${regionName}.`,
+          `Không, ${subject.name} không phải là đặc sản của ${IO}. ${subject.name} là món ăn, đặc sản nổi tiếng của tỉnh ${objectNames} thuộc miền ${vnRegionName}.`,
         ] : [
-          `Nếu nói về những món ăn như ${subject.name} thì không chỉ có ở ${IO} mà còn có thể dễ dàng tìm thấy ở nhiều tỉnh thành khác như: ${objectNames}.`,
+          `Nếu nói về những món ăn như ${subject.name} thì không chỉ có ở ${IO} mà còn phổ biến ở nhiều tỉnh thành thuộc miền: ${vnRegionDetail}.`,
         ];
 
         const randomIndex = Math.floor(Math.random() * possibleResponses.length);
@@ -78,16 +84,29 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF
 
         if (uniqueSubjectNames.length === 1) {
           // All subjects are the same, create a response
-          const subjectName = uniqueSubjectNames[0];
-          const possibleResponses = [
-            `${subjectName} is a popular dish in various locations. It's beloved for its unique taste. Some of the best places to eat ${subjectName} in Vietnam include: ${objectNames}.`,
-            `Known for its deliciousness, ${subjectName} is enjoyed in various places such as: ${objectNames}.`,
-            `${subjectName} is a popular dish in Vietnamese cuisine. Some of the best places to eat ${subjectName} in Vietnam include: ${objectNames}.`,
-          ];
-          const refcheck = `${subjectName} là món ăn phổ biến trong ẩm thực Việt Nam. Một số địa điểm có ${subjectName} ngon tại Việt Nam bao gồm: ${objectNames}.`
-          const randomIndex = Math.floor(Math.random() * possibleResponses.length);
-          responseText = possibleResponses[randomIndex];
-          chatbot_res = refcheck;
+          if (neo4jData.length >= 60){
+            console.log("data hon 60")
+            const subjectName = uniqueSubjectNames[0];
+            const possibleResponses = [
+              `${subjectName} is a popular dish throughout Vietnam. It is loved for its unique taste.`,
+              `${subjectName} is a popular dish in Vietnamese cuisine and is easily found throughout Vietnam.`,
+            ];
+            const refcheck = `${subjectName} là món ăn phổ biến ở khắp cả nước Việt Nam. Nó được yêu thích vì hương vị độc đáo của nó.`
+            const randomIndex = Math.floor(Math.random() * possibleResponses.length);
+            responseText = possibleResponses[randomIndex];
+            chatbot_res = refcheck;
+          } else {
+            const subjectName = uniqueSubjectNames[0];
+            const possibleResponses = [
+              `${subjectName} is a popular dish in various locations. It's beloved for its unique taste. Some of the best places to eat ${subjectName} in Vietnam include: ${objectNames}.`,
+              `Known for its deliciousness, ${subjectName} is enjoyed in various places such as: ${objectNames}.`,
+              `${subjectName} is a popular dish in Vietnamese cuisine. Some of the best places to eat ${subjectName} in Vietnam include: ${objectNames}.`,
+            ];
+            const refcheck = `${subjectName} là món ăn phổ biến trong ẩm thực Việt Nam. Một số địa điểm có ${subjectName} ngon tại Việt Nam bao gồm: ${objectNames}.`
+            const randomIndex = Math.floor(Math.random() * possibleResponses.length);
+            responseText = possibleResponses[randomIndex];
+            chatbot_res = refcheck;
+          }
         } else if (uniqueObjectNames.length === 1) {
           // All objects are the same, create a response
           const objectName = uniqueObjectNames[0];
@@ -253,8 +272,11 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF
         responseText = possibleResponses[randomIndex];
         chatbot_res = refcheck[randomIndex2]
       }
-
-      setUserResponseText(responseText);
+      if (lang === 'vie') {
+        setUserResponseText(chatbot_res);
+      } else if (lang === 'eng') {
+        setUserResponseText(responseText);
+      }
       setChatRes(chatbot_res);
     };
 

@@ -8,18 +8,26 @@ const RelevantResult = ({ urls, originalKeyword, chatbotRes }) => {
     return <div>Loading relevant data...</div>;
   }
 
-  if (error) {
+  if (error || data.web_ranking.length === 0) {
     return <div>No relevant data available</div>;
   }
 
   return (
     <div className="relevant-result-container">
-      <p>Relevant url</p>
+      <p>Relevant websites:</p>
       {data.web_ranking.map((item, index) => (
         <div key={index} className="relevant-item">
           <div className="relevant-web">
             <p>
-              URL: <a href={item.url} target="_blank" rel="noopener noreferrer">{item.url}</a>
+              {`Source${index + 1}:`}{' '}
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#00bfff' }}
+              >
+                {item.url}
+              </a>
             </p>
           </div>
         </div>

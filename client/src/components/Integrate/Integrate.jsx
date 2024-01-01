@@ -6,6 +6,7 @@ import useNeo4j from '../hooks/useNeo4j';
 import InputArea from '../UICus/InputArea';
 import Results from '../UICus/Results';
 import UserResults from '../UICus/UserResults';
+import { isVietnamese } from '../libs/libs';
 
 const { Title } = Typography;
 
@@ -23,6 +24,7 @@ function Integrate() {
   const [unavailableFood, setUnavailableFood] = useState([])
   const [availableLoc, setAvailableLoc] = useState([])
   const [unavailableLoc, setUnavailableLoc] = useState([])
+  const [langDetect, setLangDetect] = useState('')
 
   const handleExtractAndAnalyze = async () => {
     if (inputText.trim() === '') {
@@ -54,11 +56,11 @@ function Integrate() {
     const subjectLower = triple.subject ? triple.subject.toLowerCase() : '';
     const objectLower = triple.object ? triple.object.toLowerCase() : '';
     let relation = '';
-    if (triple.relation.toLowerCase().includes('food in')) {
+    if (triple.relation.toLowerCase().includes('food')) {
       relation = 'food_in';
-    } else if (triple.relation.toLowerCase().includes('specialty in')) {
+    } else if (triple.relation.toLowerCase().includes('special')) {
       relation = 'specialty_in';
-    } else if (triple.relation.toLowerCase().includes('dish in')) {
+    } else if (triple.relation.toLowerCase().includes('dish')) {
       relation = 'dish_in';
     }
     try {
@@ -72,6 +74,10 @@ function Integrate() {
   
   useEffect(() => {
     const getFinalResult = async () => {
+
+      const detectedLang = isVietnamese(inputText) ? 'vie' : 'eng';
+      setLangDetect(detectedLang);
+
       const hello = 
       inputText.toLocaleLowerCase().includes('hello') || 
       inputText.toLocaleLowerCase().includes('hi');
@@ -92,6 +98,7 @@ function Integrate() {
       let U2F = [];
       let A2L = [];
       let U2L = [];
+      let lang = '';
   
       const temporalCheck = nerEntities.filter((entity) => entity.label === 'TEMPORAL');
       const foodEntity = nerEntities.find((entity) => entity.label === 'FOOD');
@@ -316,7 +323,7 @@ function Integrate() {
               })
             );
       }
-      return { finalResult, isConditionMet, initialObject, A2F, U2F, A2L, U2L };
+      return { finalResult, isConditionMet, initialObject, A2F, U2F, A2L, U2L, lang };
     };
 
     const fetchData = async () => {
@@ -393,6 +400,7 @@ function Integrate() {
         UF={unavailableFood} 
         AL={availableLoc}
         UL={unavailableLoc}
+        lang={langDetect}
       />
     </div>
   );
