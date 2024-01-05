@@ -307,7 +307,7 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF
               className="clickable-image"
             />
           )}
-          {hasNeo4jData && <RelevantResult urls={source} originalKeyword={neo4jData[0].subject.name} chatbotRes={chatRes} />}
+          {hasNeo4jData && <RelevantResult urls={source} originalKeyword={[neo4jData[0].subject.name, neo4jData[0].object.name]} chatbotRes={chatRes} />}
         </div>
       )}
       <Modal

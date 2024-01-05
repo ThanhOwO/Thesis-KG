@@ -8,19 +8,22 @@ const RelevantResult = ({ urls, originalKeyword, chatbotRes }) => {
     return <div>Loading...</div>;
   }
 
-  if (error || !data || !data.web_ranking) {
+  if (error || !data || !data.web_results) {
     return <div>No relevant data available</div>;
   }
 
+  console.log("Data", data)
+
   return (
     <div className="relevant-result-container">
-      {data.web_ranking.map((item, index) => (
+      {data.web_results.map((item, index) => (
         <div key={index} className="relevant-item">
           <div className="relevant-web">
             <p>
               URL: <a href={item.url} target="_blank" rel="noopener noreferrer">{item.url}</a>
             </p>
-            <p>Relevant Score: {item['relevant score']}</p>
+            <p>Relevant Sentence: {item.best_sentence}</p>
+            <p>Relevant Score: {item.similarity_score}</p>
           </div>
         </div>
       ))}
