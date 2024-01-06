@@ -10,10 +10,10 @@ import torch
 import re
 from sklearn.metrics.pairwise import cosine_similarity
 
-# Load VnCoreNLP model outside the loop
+# Load VnCoreNLP model
 vncorenlp_model = VnCoreNLP("./vncorenlp/VnCoreNLP-1.2.jar", annotators="wseg", max_heap_size='-Xmx2g')
 
-# Load PhoBERT model outside the loop
+# Load PhoBERT model
 phobert_model = AutoModel.from_pretrained("./phobert_model")
 phobert_tokenizer = AutoTokenizer.from_pretrained("vinai/phobert-base")
 
@@ -65,12 +65,12 @@ def main():
             web_contents.append("error")
             logging.error(f"Error fetching content from {url}: {e}")
 
-        # Bước 2: Trích xuất 5 câu chứa từ khóa từ mỗi trang web
+        # Trích xuất câu chứa từ khóa từ mỗi trang web
         lowercase_keyword = [keyword.lower() for keyword in original_keyword]
 
         for content in web_contents:
             if content == "error":
-                # Thay thế câu trích xuất bị lỗi bằng từ "error"
+                # Thay thế câu trích xuất bị lỗi
                 keyword_sentences = [""] * 5
                 continue
             sentences = sent_tokenize(content)
@@ -93,7 +93,7 @@ def main():
         # Trích xuất từ từ kết quả annotate của câu trả lời
         ws_chatbot_res_words = extract_words_from_annotation(ws_chatbot_res_annotation)
 
-        # Bước 4: Tính toán điểm tương đồng và xếp hạng trang web
+        # Tính điểm tương đồng và xếp hạng trang web
         phobert_chatbot_res_embedding = get_phobert_embedding(' '.join(ws_chatbot_res_words[0]))
 
         # Chứa điểm tương đồng cho từng trang web
@@ -111,7 +111,7 @@ def main():
                 # Tính cosine similarity
                 similarity_score = cosine_similarity([phobert_chatbot_res_embedding], [web_sentence_embedding])[0][0]
 
-                # Kiểm tra nếu điểm tương đồng là cao nhất
+                # Kiểm tra nếu điểm tương đồng cao nhất
                 if similarity_score > highest_score:
                     highest_score = similarity_score
                     best_sentence = ' '.join(web_words[0])

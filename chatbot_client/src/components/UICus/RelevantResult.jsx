@@ -16,7 +16,6 @@ const RelevantResult = ({ urls, originalKeyword, chatbotRes }) => {
 
   return (
     <div className="relevant-result-container">
-      <p>Relevant websites:</p>
       {filteredWebResults.map((item, index) => (
         <div key={index} className="relevant-item">
           <div className="relevant-web">

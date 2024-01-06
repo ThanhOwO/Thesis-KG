@@ -285,10 +285,7 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF
   }, [neo4jData, isConditionMet, initialObject]);
 
   useEffect(() => {
-    // Tạo một mảng mới từ đầu nếu giá trị thay đổi
     const newOriginalKeyword = [neo4jData[0].subject.name, neo4jData[0].object.name];
-
-    // Chỉ gọi lại setOriginalKeyword nếu mảng mới khác với mảng hiện tại
     if (newOriginalKeyword !== originalKeyword) {
       setOriginalKeyword(newOriginalKeyword);
     }
