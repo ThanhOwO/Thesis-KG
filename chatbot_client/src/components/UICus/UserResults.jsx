@@ -285,10 +285,12 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF
   }, [neo4jData, isConditionMet, initialObject]);
 
   useEffect(() => {
-    const newOriginalKeyword = [neo4jData[0].subject.name, neo4jData[0].object.name];
-    if (newOriginalKeyword !== originalKeyword) {
-      setOriginalKeyword(newOriginalKeyword);
-    }
+    if (hasNeo4jData) {
+      const newOriginalKeyword = [neo4jData[0].subject.name, neo4jData[0].object.name];
+      if (newOriginalKeyword !== originalKeyword) {
+        setOriginalKeyword(newOriginalKeyword);
+      }
+    } return
   }, [neo4jData]);
 
   if (neo4jData && neo4jData.length > 0) {
