@@ -23,6 +23,16 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF
       : '';
   }
 
+  function getOriginalKeyword() {
+    if(hasNeo4jData) {
+      if (isConditionMet === 2 || isConditionMet === 3 || isConditionMet === 1) {
+        return [neo4jData[0].subject.name, neo4jData[0].object.name];
+      } else {
+        return [neo4jData[0].subject.name];
+      }
+    }
+  }
+
   useEffect(() => {
     const calculateResponseText = async () => {
       let responseText = '';
@@ -307,7 +317,7 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF
               className="clickable-image"
             />
           )}
-          {hasNeo4jData && <RelevantResult urls={source} originalKeyword={[neo4jData[0].subject.name, neo4jData[0].object.name]} chatbotRes={chatRes} />}
+          {hasNeo4jData && <RelevantResult urls={source} originalKeyword={getOriginalKeyword()} chatbotRes={chatRes} />}
         </div>
       )}
       <Modal
