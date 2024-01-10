@@ -49,29 +49,27 @@ def main():
         chatbot_res = sys.argv[3]
         web_contents = []
         result_annotations = []
+        valid_urls = []
 
-        try:
-            for url in urls:
+        for url in urls:
+            try:
                 response = requests.get(url)
                 if response.status_code == 200:
                     soup = BeautifulSoup(response.text, 'html.parser')
                     paragraphs = [p.get_text() for p in soup.find_all('p')]
                     clean_content = ' '.join(paragraphs)
                     web_contents.append(clean_content)
+                    valid_urls.append(url)
                 else:
-                    web_contents.append("error")
                     logging.error(f"Error fetching content from {url}. Status code: {response.status_code}")
-        except Exception as e:
-            web_contents.append("error")
-            logging.error(f"Error fetching content from {url}: {e}")
+            except Exception as e:
+                logging.error(f"Error fetching content from {url}: {e}")
 
         # Trích xuất câu chứa từ khóa từ mỗi trang web
         lowercase_keyword = [keyword.lower() for keyword in original_keyword]
 
         for content in web_contents:
-            if content == "error":
-                # Thay thế câu trích xuất bị lỗi
-                keyword_sentences = [""] * 5
+            if not content:
                 continue
             sentences = sent_tokenize(content)
             keyword_sentences = [sentence for sentence in sentences if all(keyword.lower() in sentence.lower() for keyword in lowercase_keyword)][:10]
@@ -99,7 +97,7 @@ def main():
         # Chứa điểm tương đồng cho từng trang web
         result_data = []
 
-        for i, (url, annotations) in enumerate(zip(urls, result_annotations)):
+        for i, (url, annotations) in enumerate(zip(valid_urls, result_annotations)):
             highest_score = 0.0
             best_sentence = None
 
