@@ -4,15 +4,13 @@ import useFact from '../hooks/useFact';
 const RelevantResult = ({ urls, originalKeyword, chatbotRes }) => {
   const { data, loading, error } = useFact(urls, originalKeyword, chatbotRes);
 
-  if (loading) {
-    return <div>Loading...</div>;
+  if (loading || !data || !data.web_results) {
+    return <div>Loading relevant data...</div>;
   }
 
-  if (error || !data || !data.web_results) {
+  if (error || data.web_results.length === 0) {
     return <div>No relevant data available</div>;
   }
-
-  console.log("Data", data)
 
   return (
     <div className="relevant-result-container">

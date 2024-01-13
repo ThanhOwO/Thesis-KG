@@ -10,6 +10,7 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF
   const [userResponseText, setUserResponseText] = useState('');
   const [chatRes, setChatRes] = useState('');
   const hasNeo4jData = neo4jData && neo4jData.length > 0;
+  const [originalKeyword, setOriginalKeyword] = useState([]);
 
   let image = null;
   let source = null;
@@ -21,16 +22,6 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF
           .map(word => word.charAt(0).toUpperCase() + word.slice(1))
           .join(' ')
       : '';
-  }
-
-  function getOriginalKeyword() {
-    if(hasNeo4jData) {
-      if (isConditionMet === 2 || isConditionMet === 3 || isConditionMet === 1) {
-        return [neo4jData[0].subject.name, neo4jData[0].object.name];
-      } else {
-        return [neo4jData[0].subject.name];
-      }
-    }
   }
 
   useEffect(() => {
@@ -293,6 +284,20 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF
     calculateResponseText();
   }, [neo4jData, isConditionMet, initialObject]);
 
+  useEffect(() => {
+    if (hasNeo4jData) {
+      const newOriginalKeyword = [neo4jData[0].subject.name, neo4jData[0].object.name];
+      const secondOriginalKeyword = [neo4jData[0].subject.name];
+      if (newOriginalKeyword !== originalKeyword) {
+        if(isConditionMet === 2 || isConditionMet === 3 || isConditionMet === 1){
+          setOriginalKeyword(newOriginalKeyword);
+        }else {
+          setOriginalKeyword(secondOriginalKeyword)
+        }
+      }
+    } return
+  }, [neo4jData]);
+
   if (neo4jData && neo4jData.length > 0) {
     const { subject } = neo4jData[0];
     image = subject.image;
@@ -317,7 +322,7 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF
               className="clickable-image"
             />
           )}
-          {hasNeo4jData && <RelevantResult urls={source} originalKeyword={getOriginalKeyword()} chatbotRes={chatRes} />}
+          {hasNeo4jData && <RelevantResult urls={source} originalKeyword={originalKeyword} chatbotRes={chatRes} />}
         </div>
       )}
       <Modal

@@ -25,6 +25,8 @@ function Integrate() {
   const [availableLoc, setAvailableLoc] = useState([])
   const [unavailableLoc, setUnavailableLoc] = useState([])
   const [langDetect, setLangDetect] = useState('')
+  const [message, setMessage] = useState([]);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleExtractAndAnalyze = async () => {
     if (inputText.trim() === '') {
@@ -362,6 +364,7 @@ function Integrate() {
       const neo4jDataResults = await Promise.all(dataPromises);
       setNeo4jData(neo4jDataResults[0] || neo4jDataResults[1]);
       console.log('Updated neo4jData:', neo4jDataResults, finalResult, isConditionMet, initialObject);
+      setIsProcessing(true)
     } catch (error) {
       console.error('Error fetching Neo4j data for final result:', error);
     }
@@ -370,6 +373,29 @@ function Integrate() {
   const isNeo4jDataEmpty = (data) => {
     return !data || data.length === 0;
   };  
+
+  useEffect(() => {
+    if (isProcessing) {
+      setMessage((prevMessages) => [
+        ...prevMessages,
+        {
+          message: {
+            neo4jData,
+            isConditionMet,
+            initialObject,
+            loading,
+            availableFood,
+            unavailableFood,
+            availableLoc,
+            unavailableLoc
+          },
+          type: 'bot',
+        },
+      ]);
+      console.log("data",neo4jData, isConditionMet, initialObject)
+      setIsProcessing(false);
+    }
+  }, [isProcessing, neo4jData, isConditionMet, initialObject, loading]);
   
   return (
     <div className="app-container">
@@ -391,17 +417,21 @@ function Integrate() {
         neo4jData={neo4jData}
         loading={loading}
       />
-      <UserResults 
-        neo4jData={neo4jData} 
-        isConditionMet={isConditionMet} 
-        loading={loading} 
-        initialObject={initialObject}
-        AF={availableFood} 
-        UF={unavailableFood} 
-        AL={availableLoc}
-        UL={unavailableLoc}
-        lang={langDetect}
-      />
+      {message.map((chat, index) => (
+        <div key={index}>
+            <UserResults
+              neo4jData={chat.message.neo4jData}
+              isConditionMet={chat.message.isConditionMet}
+              loading={chat.message.loading}
+              initialObject={chat.message.initialObject}
+              AF={chat.message.availableFood}
+              UF={chat.message.unavailableFood}
+              AL={chat.message.availableLoc}
+              UL={chat.message.unavailableLoc}
+              lang={langDetect}
+            />
+        </div>
+      ))}
     </div>
   );
 }
