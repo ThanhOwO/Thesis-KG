@@ -157,7 +157,7 @@ function Integrate() {
       }
       //What, where, which question
       if (isQueryWhatWhereWhich) {
-        if (inputText.toLowerCase().includes('history')) {
+        if (/history|originate|create/i.test(inputText)) {
           isConditionMet = 4;
           const subject = foodEntity ? foodEntity.text : '';
               const object = '';
