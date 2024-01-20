@@ -14,9 +14,12 @@ const RelevantResult = ({ urls, originalKeyword, chatbotRes }) => {
 
   const filteredWebResults = data.web_results.filter(item => item.similarity_score > 0.0);
 
+  const truncateLink = (link, maxLength) => {
+    return link.length > maxLength ? `${link.slice(0, maxLength)}...` : link;
+  };
+
   return (
     <div className="relevant-result-container">
-      <p>Relevant websites:</p>
       {filteredWebResults.map((item, index) => (
         <div key={index} className="relevant-item">
           <div className="relevant-web">
@@ -28,7 +31,7 @@ const RelevantResult = ({ urls, originalKeyword, chatbotRes }) => {
                 rel="noopener noreferrer"
                 style={{ color: '#00bfff' }}
               >
-                {item.url}
+                {truncateLink(item.url, 60)}
               </a>
             </p>
           </div>
