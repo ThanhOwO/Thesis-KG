@@ -7,13 +7,13 @@ import json
 import logging
 from transformers import AutoTokenizer, AutoModel
 import torch
-from statistics import mean
+import re
 from sklearn.metrics.pairwise import cosine_similarity
 
-# Load VnCoreNLP model outside the loop
+# Load VnCoreNLP model
 vncorenlp_model = VnCoreNLP("./vncorenlp/VnCoreNLP-1.2.jar", annotators="wseg", max_heap_size='-Xmx2g')
 
-# Load PhoBERT model outside the loop
+# Load PhoBERT model
 phobert_model = AutoModel.from_pretrained("./phobert_model")
 phobert_tokenizer = AutoTokenizer.from_pretrained("vinai/phobert-base")
 
@@ -37,43 +37,49 @@ def extract_words_from_annotation(annotation):
         result_sentences.append(words)
     return result_sentences
 
+def remove_unwanted_characters(text):
+    unwanted_characters = r"[\(\);{}\[\]/'\"\\\-+=<>]"
+    clean_text = re.sub(unwanted_characters, "", text)
+    return clean_text
+
 def main():
     try:
         urls = sys.argv[1].split(',')
-        original_keyword = sys.argv[2]
+        original_keyword = sys.argv[2].split(',')
         chatbot_res = sys.argv[3]
         web_contents = []
         result_annotations = []
+        valid_urls = []
 
-        try:
-            for url in urls:
+        for url in urls:
+            try:
                 response = requests.get(url)
                 if response.status_code == 200:
                     soup = BeautifulSoup(response.text, 'html.parser')
                     paragraphs = [p.get_text() for p in soup.find_all('p')]
                     clean_content = ' '.join(paragraphs)
                     web_contents.append(clean_content)
+                    valid_urls.append(url)
                 else:
-                    web_contents.append("error")
                     logging.error(f"Error fetching content from {url}. Status code: {response.status_code}")
-        except Exception as e:
-            web_contents.append("error")
-            logging.error(f"Error fetching content from {url}: {e}")
+            except Exception as e:
+                logging.error(f"Error fetching content from {url}: {e}")
 
-        # Bước 2: Trích xuất 5 câu chứa từ khóa từ mỗi trang web
-        lowercase_keyword = original_keyword.lower()
+        # Trích xuất câu chứa từ khóa từ mỗi trang web
+        lowercase_keyword = [keyword.lower() for keyword in original_keyword]
 
         for content in web_contents:
-            if content == "error":
-                # Thay thế câu trích xuất bị lỗi bằng từ "error"
-                keyword_sentences = ["error"] * 5
-            else:
-                sentences = sent_tokenize(content)
-                keyword_sentences = [sentence for sentence in sentences if lowercase_keyword in sentence.lower()][:5]
+            if not content:
+                continue
+            sentences = sent_tokenize(content)
+            keyword_sentences = [sentence for sentence in sentences if all(keyword.lower() in sentence.lower() for keyword in lowercase_keyword)][:10]
+
+            # Loại bỏ các ký tự không mong muốn từ câu
+            cleaned_sentences = [remove_unwanted_characters(sentence) for sentence in keyword_sentences]
 
             # Annotate từng câu
             annotations = []
-            for sentence in keyword_sentences:
+            for sentence in cleaned_sentences:
                 annotation = load_vncorenlp_model().annotate(sentence)
                 annotations.append(annotation)
 
@@ -85,40 +91,37 @@ def main():
         # Trích xuất từ từ kết quả annotate của câu trả lời
         ws_chatbot_res_words = extract_words_from_annotation(ws_chatbot_res_annotation)
 
-        # Bước 4: Tính toán điểm tương đồng và xếp hạng trang web
+        # Tính điểm tương đồng và xếp hạng trang web
         phobert_chatbot_res_embedding = get_phobert_embedding(' '.join(ws_chatbot_res_words[0]))
 
         # Chứa điểm tương đồng cho từng trang web
-        web_similarity_scores = []
+        result_data = []
 
-        # Tính cosine similarity cho từng câu của mỗi trang web
-        for i, (url, annotations) in enumerate(zip(urls, result_annotations)):
-            web_scores = []
+        for i, (url, annotations) in enumerate(zip(valid_urls, result_annotations)):
+            highest_score = 0.0
+            best_sentence = None
+
             for j, annotation in enumerate(annotations):
                 # Trích xuất từ từ kết quả annotate của câu trang web
                 web_words = extract_words_from_annotation(annotation)
                 # Biểu diễn vector cho câu từ trang web
-                web_sentence_embedding = get_phobert_embedding(' '.join(web_words[0]))
+                web_sentence_embedding = get_phobert_embedding(' '.join(web_words[0])).astype(float)
                 # Tính cosine similarity
                 similarity_score = cosine_similarity([phobert_chatbot_res_embedding], [web_sentence_embedding])[0][0]
 
-                web_scores.append(similarity_score)
+                # Kiểm tra nếu điểm tương đồng cao nhất
+                if similarity_score > highest_score:
+                    highest_score = similarity_score
+                    best_sentence = ' '.join(web_words[0])
 
-            # Tính trung bình điểm cho trang web hiện tại
-            web_average_score = mean(web_scores)
-            web_similarity_scores.append((url, web_average_score))
+            # Tạo dictionary chứa thông tin về URL, câu có điểm cao nhất, và điểm tương đồng
+            result_entry = {"url": url, "best_sentence": best_sentence, "similarity_score": highest_score}
+            result_data.append(result_entry)
 
-        # Xếp hạng trang web dựa trên điểm trung bình
-        sorted_web_scores = sorted(web_similarity_scores, key=lambda x: x[1], reverse=True)
-
-        # Convert NumPy float32 to native Python float
-        sorted_web_scores = [(url, score.item()) for url, score in sorted_web_scores]
-
-        # Organize the ranking information
-        ranking_info = [{"url": url, "relevant score": score} for url, score in sorted_web_scores]
-
-        # Print the result as JSON for API call
-        print(json.dumps({"web_ranking": ranking_info}, indent=2))
+        # Sắp xếp danh sách kết quả theo giảm dần của điểm tương đồng
+        sorted_result_data = sorted(result_data, key=lambda x: x["similarity_score"], reverse=True)
+        # In ra kết quả dưới dạng JSON
+        print(json.dumps({"web_results": sorted_result_data}, indent=2))
 
     except Exception as e:
         logging.error(f"Unexpected error: {e}")

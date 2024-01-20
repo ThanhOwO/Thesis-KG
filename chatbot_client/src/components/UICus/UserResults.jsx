@@ -9,6 +9,7 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF
   const [modalImage, setModalImage] = useState('');
   const [userResponseText, setUserResponseText] = useState('');
   const [chatRes, setChatRes] = useState('');
+  const [originalKeyword, setOriginalKeyword] = useState([]);
   const hasNeo4jData = neo4jData && neo4jData.length > 0;
 
   let image = null;
@@ -283,6 +284,20 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF
     calculateResponseText();
   }, [neo4jData, isConditionMet, initialObject]);
 
+  useEffect(() => {
+    if (hasNeo4jData) {
+      const newOriginalKeyword = [neo4jData[0].subject.name, neo4jData[0].object.name];
+      const secondOriginalKeyword = [neo4jData[0].subject.name];
+      if (newOriginalKeyword !== originalKeyword) {
+        if(isConditionMet === 2 || isConditionMet === 3 || isConditionMet === 1){
+          setOriginalKeyword(newOriginalKeyword);
+        }else {
+          setOriginalKeyword(secondOriginalKeyword)
+        }
+      }
+    } return
+  }, [neo4jData]);
+
   if (neo4jData && neo4jData.length > 0) {
     const { subject } = neo4jData[0];
     image = subject.image;
@@ -307,7 +322,7 @@ const UserResults = ({ neo4jData, isConditionMet, loading, initialObject, AF, UF
               className="clickable-image"
             />
           )}
-          {hasNeo4jData && <RelevantResult urls={source} originalKeyword={neo4jData[0].subject.name} chatbotRes={chatRes} />}
+          {hasNeo4jData && <RelevantResult urls={source} originalKeyword={originalKeyword} chatbotRes={chatRes} />}
         </div>
       )}
       <Modal
