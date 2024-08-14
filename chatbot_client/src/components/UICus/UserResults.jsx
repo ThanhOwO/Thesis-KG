@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Spin, Typography, Modal } from 'antd';
+import { Spin, Modal } from 'antd';
 import './styles.scss';
 import RelevantResult from './RelevantResult';
 import axios from 'axios';

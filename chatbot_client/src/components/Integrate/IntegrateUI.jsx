@@ -31,7 +31,7 @@ function IntegrateUI() {
   const [transformedText, setTransformedText] = useState('')
   const [langDetect, setLangDetect] = useState('')
   const handleEnter = async (e) => {
-    if (e.key == 'Enter' && !loading && userInput.trim() !== '') await handleSend()
+    if (e.key === 'Enter' && !loading && userInput.trim() !== '') await handleSend()
   }
 
   const handleExtractAndAnalyze = async () => {
